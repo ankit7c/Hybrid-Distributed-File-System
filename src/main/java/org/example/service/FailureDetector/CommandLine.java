@@ -1,6 +1,7 @@
 package org.example.service.FailureDetector;
 
 import org.example.Client;
+import org.example.FileSystem.Sender;
 import org.example.Server;
 import org.example.entities.FDProperties;
 import org.example.entities.MembershipList;
@@ -29,7 +30,9 @@ public class CommandLine implements Runnable {
             System.out.println("Enter The command");
             Scanner scanner = new Scanner(System.in);
             String command = scanner.nextLine();
+            String[] list = command.split(" ");
             Dissemination d = new Dissemination();
+            Sender sender = new Sender();
             try {
                 if (command.startsWith("grep")) {
                     Client c = new Client();
@@ -38,7 +41,7 @@ public class CommandLine implements Runnable {
                     double dropProb = Double.parseDouble(command.substring(4));
                     fDProperties.put("dropProbability", dropProb);
                 } else {
-                    switch (command) {
+                    switch (list[0]) {
                         case "list_mem":
                             System.out.println("Membership List");
                             MembershipList.printMembersId();
@@ -69,14 +72,30 @@ public class CommandLine implements Runnable {
                             System.out.println(FDProperties.getFDProperties().get("isSuspicionModeOn"));
                             break;
 
+                        case "create":
+                            sender.uploadFile(list[1], list[2]);
+                            System.out.println(list[0] + list[1] + list[2]);
+                            break;
+
+                        case "get":
+                            sender.get_File(list[1], list[2]);
+                            break;
+                        case "append":
+                            break;
+                        case "merge":
+                            break;
+                        case "ls":
+                            break;
+                        case "store":
+                            break;
+                        case "getFromReplica":
+                            break;
                         default:
                             System.out.println("Invalid command");
                             logger.error("Invalid command");
 
-
                     }
                 }
-
 
             } catch (Exception e) {
                 logger.error("Error in Commandline while exectuing  command {}  Error  : {}", command, e);

@@ -2,24 +2,23 @@ package org.example.entities;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.FileSystem.HashFunction;
 import org.example.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ThreadLocalRandom;
+import java.lang.management.MemoryManagerMXBean;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.stream.Collectors;
+
 /**
  * This is the Membershiplist  entity class
  */
 public class MembershipList {
 
-    public static ConcurrentHashMap<String, Member> members = new ConcurrentHashMap<>();
+    public static ConcurrentSkipListMap<String, Member> members = new ConcurrentSkipListMap<>();
+    public static ConcurrentSkipListMap<Integer, Member> memberslist = new ConcurrentSkipListMap<>();
     public static List<String> memberNames = new CopyOnWriteArrayList<>();
 //    public static Set<String> memberNames = new ConcurrentSkipListSet<>();;
     public static int pointer;
@@ -27,11 +26,13 @@ public class MembershipList {
 
     public static void addMember(Member member) {
         members.put(member.getName(), member);
+        memberslist.put(member.getId(), member);
         if(!memberNames.contains(member.getName()))
             memberNames.add(member.getName());
     }
 
     public static void removeMember(String name) {
+        memberslist.remove(members.get(name).getId());
         members.remove(name);
         memberNames.remove(name);
     }
@@ -55,7 +56,7 @@ public class MembershipList {
             ObjectMapper mapper = new ObjectMapper();
             try {
                 String json = mapper.writeValueAsString(v);
-                System.out.println(" " +  v.getName() + "_" + v.getIpAddress() + "_" + v.getPort() + "_" + v.getVersionNo() + "_" + v.getIncarnationNo());
+                System.out.println(v.getId() + " " +  v.getName() + "_" + v.getIpAddress() + "_" + v.getPort() + "_" + v.getVersionNo() + "_" + v.getIncarnationNo());
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
@@ -97,13 +98,15 @@ public class MembershipList {
                 //TODO now send ping to other k nodes
                 Member member = members.get(memberNames.get(ThreadLocalRandom.current().nextInt(memberNames.size())));
                 if (!memberList.contains(member) && targetNode.equals(member.getName())) {
-                    Member newMember = new Member(member.getName(),
+                    Member newMember = new Member(member.getId(),
+                            member.getName(),
                             member.getIpAddress(),
                             member.getPort(),
                             member.getVersionNo(),
                             member.getStatus(),
                             member.getDateTime(),
-                            member.getIncarnationNo());
+                            member.getIncarnationNo()
+                    );
                     memberList.add(newMember);
                 }
             }
@@ -111,5 +114,48 @@ public class MembershipList {
             logger.info("Map is empty.");
         }
         return memberList;
+    }
+
+    public static List<Member> getNextMembers(int id){
+        List<Member> sortedMembers = members.values().stream()
+                .sorted(Comparator.comparingInt(Member::getId))
+                .collect(Collectors.toList());
+        // Find the starting index where Member.id >= given id
+        int startIndex = 0;
+        for (int i = 0; i < sortedMembers.size(); i++) {
+            if (sortedMembers.get(i).getId() >= id) {
+                startIndex = i;
+                break;
+            }
+        }
+        // Collect the next two members in a circular fashion
+        List<Member> result = new ArrayList<>();
+        for (int i = 1; i <= 2; i++) {
+            int index = (startIndex + i) % sortedMembers.size();
+            result.add(sortedMembers.get(index));
+        }
+        return result;
+    }
+
+    public static Member getMemberById(int id) {
+        Member member = memberslist.get(id);
+
+        if (member != null) {
+            return member;
+        } else {
+            // Get the next entry if the requested id is not found
+            Integer nextKey = memberslist.higherKey(id);
+            if (nextKey != null) {
+                return memberslist.get(nextKey);
+            } else {
+                // If there's no "next" key, wrap around and return the first entry
+                return memberslist.firstEntry().getValue();
+            }
+        }
+    }
+
+    public static Member getCoordinator(String filename){
+        int co = HashFunction.hashCo(filename);
+        return getMemberById(co);
     }
 }

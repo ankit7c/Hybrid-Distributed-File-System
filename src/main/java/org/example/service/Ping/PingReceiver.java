@@ -1,6 +1,7 @@
 package org.example.service.Ping;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.FileSystem.HashFunction;
 import org.example.entities.FDProperties;
 import org.example.entities.Member;
 import org.example.entities.MembershipList;
@@ -11,9 +12,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.*;
-import java.time.LocalDateTime;
-import java.time.Month;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -50,10 +48,6 @@ public class PingReceiver extends Thread{
             Message message = Message.process(address, String.valueOf(port), received);
 
             String messageName = message.getMessageName();
-            Random rand = new Random();
-            if (rand.nextDouble() < (double)FDProperties.getFDProperties().get("dropProbability")) {
-                messageName = "Unsuccessful";
-            }
             //TODO based on the message received take the action
             //TODO add the introducer under this class and set a flag of if introducer then only execute the below code
             //TODO same will be for suspicion mode.
@@ -63,7 +57,8 @@ public class PingReceiver extends Thread{
                     try {
                         logger.info("Introduction successful message received");
                         MembershipList.addMember(
-                                new Member((String) message.getMessageContent().get("senderName"),
+                                new Member(HashFunction.hash((String) message.getMessageContent().get("senderName")),
+                                        (String) message.getMessageContent().get("senderName"),
                                         (String) message.getMessageContent().get("senderIp"),
                                         ((String) message.getMessageContent().get("senderPort")),
                                         (String) message.getMessageContent().get("versionNo"),
@@ -85,7 +80,7 @@ public class PingReceiver extends Thread{
                                 Map<String, String> map = objectMapper.readValue(t, Map.class);
                                 if(!map.get("name").equals(FDProperties.getFDProperties().get("machineName"))) {
                                     MembershipList.addMember(
-                                            new Member(map.get("name"), map.get("ipAddress"), map.get("port"), map.get("versionNo"), map.get("status"), map.get("dateTime"), map.get("incarnationNo"))
+                                            new Member(HashFunction.hash(map.get("name")), map.get("name"), map.get("ipAddress"), map.get("port"), map.get("versionNo"), map.get("status"), map.get("dateTime"), map.get("incarnationNo"))
                                     );
                                 }
                             } catch (IOException e) {
@@ -109,7 +104,8 @@ public class PingReceiver extends Thread{
                                 result = pingSender.multicast(message.getMessageName(), message.getMessageContent());
                                 //add this member to its own list
                                 MembershipList.addMember(
-                                        new Member((String) message.getMessageContent().get("senderName"),
+                                        new Member(HashFunction.hash((String) message.getMessageContent().get("senderName")),
+                                                (String) message.getMessageContent().get("senderName"),
                                                 (String) message.getMessageContent().get("senderIp"),
                                                 ((String) message.getMessageContent().get("senderPort")),
                                                 (String) message.getMessageContent().get("versionNo"),
@@ -164,7 +160,8 @@ public class PingReceiver extends Thread{
 //                            int incarnationNo = (int) message.getMessageContent().get("incarnationNo");
 //                            logger.info("No");
                             MembershipList.addMember(
-                                    new Member((String) message.getMessageContent().get("senderName"),
+                                    new Member(HashFunction.hash((String) message.getMessageContent().get("senderName")),
+                                            (String) message.getMessageContent().get("senderName"),
                                             (String) message.getMessageContent().get("senderIp"),
                                             k,
                                             t,
@@ -210,41 +207,6 @@ public class PingReceiver extends Thread{
                         pingReqContent.put("originalSenderPort", String.valueOf(port));
                         System.out.println("Sending Ping Ack");
                         Message pingReqMessage = new Message("ping", (String) message.getMessageContent().get("targetSenderIp"), String.valueOf(Integer.parseInt((String) message.getMessageContent().get("targetSenderPort"))), pingReqContent);
-                        PingSender pingSender = new PingSender();
-                        pingSender.sendMessage(pingReqMessage);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                    break;
-                case "pingReqJ":
-                    try {
-                        System.out.println("Ping Required J received");
-                        Map<String, Object> pingREqJContent = message.getMessageContent();
-                        pingREqJContent.put("messageName", "pingReqJAck");
-                        pingREqJContent.put("senderName", FDProperties.getFDProperties().get("machineName"));
-                        pingREqJContent.put("senderIp", FDProperties.getFDProperties().get("machineIp"));
-                        pingREqJContent.put("senderPort", String.valueOf(FDProperties.getFDProperties().get("machinePort")));
-                        System.out.println("Sending Ping Required J Ack");
-                        buf = new byte[16384];
-                        buf = objectMapper.writeValueAsString(pingREqJContent).getBytes();
-                        DatagramPacket pingAckPacket
-                                = new DatagramPacket(buf, buf.length, address, port);
-                        serverSocket.send(pingAckPacket);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                    break;
-                case "pingReqJAck":
-                    try {
-                        System.out.println("Ping Required J Ack received");
-                        Map<String, Object> pingREqJAckContent = message.getMessageContent();
-                        pingREqJAckContent.put("messageName", "pingReqAck");
-                        pingREqJAckContent.put("senderName", FDProperties.getFDProperties().get("machineName"));
-                        pingREqJAckContent.put("senderIp", FDProperties.getFDProperties().get("machineIp"));
-                        pingREqJAckContent.put("senderPort", String.valueOf(FDProperties.getFDProperties().get("machinePort")));
-                        System.out.println("Sending Ping Required J Ack");
-                        Message pingReqMessage = new Message("pingReqAck", (String) message.getMessageContent().get("originalSenderIp"),
-                                ((String) message.getMessageContent().get("originalSenderPort")), pingREqJAckContent);
                         PingSender pingSender = new PingSender();
                         pingSender.sendMessage(pingReqMessage);
                     } catch (IOException e) {

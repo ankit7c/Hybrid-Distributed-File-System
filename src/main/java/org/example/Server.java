@@ -1,5 +1,6 @@
 package org.example;
 
+import org.example.FileSystem.Receiver;
 import org.example.entities.FDProperties;
 import org.example.entities.Member;
 import org.example.service.FailureDetector.Dissemination;
@@ -42,12 +43,9 @@ public class Server{
             e.printStackTrace();
         }
         //start the Failure detector scheduler
-//        if(((Boolean) FDProperties.getFDProperties().get("isIntroducer"))) {
-//            ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-            FDServer task = new FDServer(dissemination);
-//            executor.scheduleAtFixedRate(task.send(), 0, 5, TimeUnit.SECONDS);
-            task.start();
-//        executor.scheduleAtFixedRate(task.send(), 0, (int) FDProperties.getFDProperties().get("protocolPeriod"), TimeUnit.SECONDS);
-//        }
+        FDServer task = new FDServer(dissemination);
+        task.start();
+        Receiver receiver = new Receiver();
+        receiver.start();
     }
 }

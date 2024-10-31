@@ -7,6 +7,7 @@ import java.time.format.DateTimeFormatter;
  * This is the member entity class
  */
 public class Member {
+    int id;
     String name;
     String ipAddress;
     String port;
@@ -15,7 +16,8 @@ public class Member {
     String dateTime;
     String incarnationNo;
 
-    public Member(String name, String ipAddress, String port, String versionNo, String status, String dateTime, String incarnationNo) {
+    public Member(int id, String name, String ipAddress, String port, String versionNo, String status, String dateTime, String incarnationNo) {
+        this.id = id;
         this.name = name;
         this.ipAddress = ipAddress;
         this.port = port;
@@ -34,6 +36,16 @@ public class Member {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss:nnnn");
         return LocalDateTime.parse(dateTimeString, formatter);
     }
+
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
 
     public String getName() {
         return name;
