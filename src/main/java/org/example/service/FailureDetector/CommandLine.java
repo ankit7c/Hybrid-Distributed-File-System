@@ -1,13 +1,17 @@
 package org.example.service.FailureDetector;
 
 import org.example.Client;
+import org.example.FileSystem.HashFunction;
 import org.example.FileSystem.Sender;
 import org.example.Server;
 import org.example.entities.FDProperties;
+import org.example.entities.Member;
 import org.example.entities.MembershipList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -72,6 +76,7 @@ public class CommandLine implements Runnable {
                             System.out.println(FDProperties.getFDProperties().get("isSuspicionModeOn"));
                             break;
 
+                        // Commands for Distributed File System Handling
                         case "create":
                             sender.uploadFile(list[1], list[2]);
                             System.out.println(list[0] + list[1] + list[2]);
@@ -81,14 +86,24 @@ public class CommandLine implements Runnable {
                             sender.get_File(list[1], list[2]);
                             break;
                         case "append":
+
                             break;
                         case "merge":
                             break;
                         case "ls":
+                            int fileNameHash = HashFunction.hash(list[1]);
+                            List<Member> memberslist = new ArrayList<>();
+                            memberslist.add(MembershipList.getMemberById(fileNameHash));
+                            memberslist.addAll(MembershipList.getNextMembers(fileNameHash));
+                            System.out.println("File " + list[1] + " is present at below machines");
+                            for (Member member : memberslist) {
+                                System.out.println("Member id: " + member.getId());
+                            }
                             break;
                         case "store":
                             break;
                         case "getFromReplica":
+                            sender.getFileFromReplica(list[1], list[2], list[3]);
                             break;
                         default:
                             System.out.println("Invalid command");

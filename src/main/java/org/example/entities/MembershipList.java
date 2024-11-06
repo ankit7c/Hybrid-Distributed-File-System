@@ -31,6 +31,10 @@ public class MembershipList {
             memberNames.add(member.getName());
     }
 
+    public static void addItself(Member member) {
+        memberslist.put(member.getId(), member);
+    }
+
     public static void removeMember(String name) {
         memberslist.remove(members.get(name).getId());
         members.remove(name);

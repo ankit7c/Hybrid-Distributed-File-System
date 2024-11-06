@@ -1,6 +1,7 @@
 package org.example.FileSystem;
 
 import org.example.entities.FDProperties;
+import org.example.entities.FileTransferManager;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -11,44 +12,79 @@ import java.nio.channels.SocketChannel;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
-public class FileReceiver  extends Thread {
-    String localFileName;
+public class FileReceiver implements Runnable {
     int port;
-    String result;
+    FileTransferManager manager;
+    String localFileName;
 
-    public FileReceiver(String localFileName) {
-        this.localFileName = localFileName;
+    public FileReceiver(FileTransferManager manager) {
         this.port = (int) FDProperties.getFDProperties().get("machinePort") + 20;
-    }
-
-    public void receiveFile() {
-        try (ServerSocketChannel serverSocketChannel = ServerSocketChannel.open()) {
-            serverSocketChannel.bind(new InetSocketAddress(port));
-            System.out.println("Server listening on port " + port);
-            try (SocketChannel socketChannel = serverSocketChannel.accept();
-                 FileChannel fileChannel = FileChannel.open(Paths.get(localFileName), StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
-
-                ByteBuffer buffer = ByteBuffer.allocateDirect(1024 * 1024); // 1 MB buffer
-                while (socketChannel.read(buffer) > 0) {
-                    buffer.flip();
-                    fileChannel.write(buffer);
-                    buffer.clear();
-                }
-                System.out.println("File received successfully!");
-                System.out.println("File saved at " + localFileName);
-                result = "File received successfully!";
-
-            } catch (IOException e) {
-                System.out.println("Error during file reception: " + e.getMessage());
-                result = "File reception failed!";
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            result = "Server setup failed!";
-        }
+        this.manager = manager;
     }
 
     public void run() {
-        receiveFile();
+        try (ServerSocketChannel serverSocketChannel = ServerSocketChannel.open()) {
+            serverSocketChannel.bind(new InetSocketAddress(port));
+            System.out.println("Server listening on port " + port);
+            while (true) {
+                try (SocketChannel socketChannel = serverSocketChannel.accept()) {
+
+                    // Step 1: Read the metadata
+                    ByteBuffer metadataBuffer = ByteBuffer.allocate(256); // assuming metadata is less than 256 bytes
+                    socketChannel.read(metadataBuffer);
+                    metadataBuffer.flip();
+                    String metadata = new String(metadataBuffer.array(), 0, metadataBuffer.limit());
+
+                    // Parse the metadata to extract filename and size (assuming format "FILENAME:filename;SIZE:size")
+                    String[] metadataParts = metadata.split(";");
+
+                    long fileSize = 0;
+                    String fileOp = null;
+                    String fileType = null;
+                    for (String part : metadataParts) {
+                        if (part.startsWith("FILENAME:")) {
+                            localFileName = part.substring("FILENAME:".length());
+                        } else if (part.startsWith("SIZE:")) {
+                            fileSize = Long.parseLong(part.substring("SIZE:".length()));
+                        } else if (part.startsWith("TYPE:")) {
+                            fileType = part.substring("TYPE:".length());
+                        } else if (part.startsWith("OP:")) {
+                            fileOp = part.substring("OP:".length());
+                        }
+                    }
+
+                    if (localFileName == null || fileSize == 0 || fileOp == null || fileType == null) {
+                        System.out.println("Invalid metadata received");
+                        continue; // Skip to the next connection if metadata is invalid
+                    }
+
+                    //Based on File Operation choose the option to create or append
+                    FileChannel fileChannel = null;
+                    if(fileOp.equals("CREATE")){
+                        fileChannel = FileChannel.open(Paths.get(localFileName), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                    }else if(fileOp.equals("APPEND")){
+                        fileChannel = FileChannel.open(Paths.get(localFileName), StandardOpenOption.APPEND, StandardOpenOption.WRITE);
+                    }
+                    ByteBuffer buffer = ByteBuffer.allocateDirect(1024 * 1024); // 1 MB buffer
+                    while (socketChannel.read(buffer) > 0) {
+                        buffer.flip();
+                        fileChannel.write(buffer);
+                        buffer.clear();
+                    }
+                    System.out.println("File received successfully!");
+                    System.out.println("File saved at " + localFileName);
+                    manager.logEvent("File received: " + localFileName);
+
+                } catch (IOException e) {
+                    System.out.println("Error during file reception: " + e.getMessage());
+                    manager.logEvent("File reception failed for " + localFileName + ": " + e.getMessage());
+                }
+                localFileName = null;
+
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
+
 }

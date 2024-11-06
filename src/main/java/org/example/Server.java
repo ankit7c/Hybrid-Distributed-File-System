@@ -1,10 +1,13 @@
 package org.example;
 
+import org.example.FileSystem.HashFunction;
 import org.example.FileSystem.Receiver;
 import org.example.entities.FDProperties;
 import org.example.entities.Member;
+import org.example.entities.MembershipList;
 import org.example.service.FailureDetector.Dissemination;
 import org.example.service.FailureDetector.FDServer;
+import org.example.service.FileSystem;
 import org.example.service.Log.LogServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +48,19 @@ public class Server{
         //start the Failure detector scheduler
         FDServer task = new FDServer(dissemination);
         task.start();
+
+        // Add itself to File membership list
+        MembershipList.addItself(new Member(HashFunction.hash((String) FDProperties.getFDProperties().get("machineName")),
+                (String) FDProperties.getFDProperties().get("machineName"),
+                (String) FDProperties.getFDProperties().get("machineIp"),
+                (String) FDProperties.getFDProperties().get("machinePort"),
+                (String) FDProperties.getFDProperties().get("versionNo"),
+                "alive",
+                Member.getLocalDateTime(),
+                (String) FDProperties.getFDProperties().get("incarnationNo")));
         Receiver receiver = new Receiver();
         receiver.start();
+        FileSystem fileSystem = new FileSystem();
+        fileSystem.start();
     }
 }

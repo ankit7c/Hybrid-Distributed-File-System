@@ -1,6 +1,7 @@
 package org.example.FileSystem;
 
 import org.example.entities.FDProperties;
+import org.example.entities.FileTransferManager;
 import org.example.entities.Message;
 
 import java.io.BufferedReader;
@@ -14,6 +15,7 @@ public class Receiver extends Thread {
 
     public void receiveMessage(){
         int serverPort = (int) FDProperties.getFDProperties().get("machinePort") + 10;
+        FileTransferManager fileTransferManager = new FileTransferManager();
         try (var serverSocket = new ServerSocket(serverPort)) { // Server listening on port 5000
             System.out.println("Server is listening on port " + serverPort);
 
@@ -31,23 +33,69 @@ public class Receiver extends Thread {
                     System.out.println("Received from client: " + message);
                     String response = "Successful";
                     switch (message.getMessageName()){
-                        case "sending_file" :
-                            FileReceiver fileReceiver = new FileReceiver((String) message.getMessageContent().get("hyDFSFileName"));
-                            fileReceiver.start();
-                            out.println(response);
+                        case "creating_HDFS_file" :
+                            try {
+                                FileReceiver fileReceiver = new FileReceiver((String) message.getMessageContent().get("hyDFSFileName"), "sending_file");
+                                fileReceiver.start();
+                                out.println(response);
+                                //TODO write a code to create replicas of the received file
+                            }catch (Exception e){
+                                e.printStackTrace();
+                            }
                             break;
                         case "get_file" :
                             //TODO write code for sending the file which is demanded
-                            out.println(response);
-                            String receivePort = (String) message.getMessageContent().get("fileReceiverPort");
-                            FileSender fileSender = new FileSender((String) message.getMessageContent().get("hyDFSFileName"), message.getIpAddress().getHostAddress() , Integer.parseInt(receivePort));
-                            fileSender.start();
+                            try {
+                                out.println(response);
+                                String receivePort = (String) message.getMessageContent().get("fileReceiverPort");
+                                FileSender fileSender = new FileSender((String) message.getMessageContent().get("hyDFSFileName"), message.getIpAddress().getHostAddress(), Integer.parseInt(receivePort));
+                                fileSender.start();
+                            }catch (Exception e){
+                                e.printStackTrace();
+                            }
                             break;
-                        case "co_ord_get_file":
-
+                        case "get_file_from_replica" :
+                            try {
+                                out.println(response);
+                                String receivePort = (String) message.getMessageContent().get("fileReceiverPort");
+                                FileSender fileSender = new FileSender((String) message.getMessageContent().get("hyDFSFileName"), message.getIpAddress().getHostAddress(), Integer.parseInt(receivePort));
+                                fileSender.start();
+                            }catch (Exception e){
+                                e.printStackTrace();
+                            }
                             break;
-                        case "co_ord_write_file":
-
+                        case "append_file":
+                            try {
+                                FileReceiver fileReceiver = new FileReceiver((String) message.getMessageContent().get("hyDFSFileName"), "append_file");
+                                fileReceiver.start();
+                                //TODO write a code to append data to the replicas
+                                //We can start a thread which will in backend send the data to the replicas
+                                //After the replicas are updated we can send the result back to the querier.
+                                out.println(response);
+                            }catch (Exception e){
+                                e.printStackTrace();
+                            }
+                            break;
+                        case "receive_replica":
+                            try {
+                                FileReceiver fileReceiver = new FileReceiver((String) message.getMessageContent().get("hyDFSFileName"), "receive_replica");
+                                fileReceiver.start();
+                                out.println(response);
+                                //TODO write a code to create replicas of the received file
+                            }catch (Exception e){
+                                e.printStackTrace();
+                            }
+                            break;
+                        case "append_replica":
+                            try {
+                                FileReceiver fileReceiver = new FileReceiver((String) message.getMessageContent().get("hyDFSFileName"), "append_replica");
+                                fileReceiver.start();
+                                out.println(response);
+                            }catch (Exception e){
+                                e.printStackTrace();
+                            }
+                            break;
+                        case "receive_Multi_append":
                             break;
                         case "/exit":
                     }
