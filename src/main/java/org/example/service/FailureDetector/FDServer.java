@@ -195,6 +195,7 @@ public class FDServer extends Thread {
                                     dissemination.sendSuspectMessage(member);
                             } else {
                                 //Removing the node from the list
+                                //TODO MP3 call a function to start re replication process
                                 dissemination.sendFailedMessage(member);
                             }
                         }

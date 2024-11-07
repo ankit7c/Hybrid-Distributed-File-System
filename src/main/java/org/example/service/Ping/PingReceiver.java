@@ -216,6 +216,7 @@ public class PingReceiver extends Thread{
                 case "failed" :
                     System.out.println("Failed message received" + message.getMessageContent().get("memberName") + "__" + Member.getLocalDateTime());
                     logger.info("Failed message received" + message.getMessageContent().get("memberName"));
+                    //TODO MP3 call a function to start re replication process
                     try {
                         if(!message.getMessageContent().get("memberName").equals(FDProperties.getFDProperties().get("machineName"))) {
                             MembershipList.removeMember((String) message.getMessageContent().get("memberName"));
@@ -232,8 +233,8 @@ public class PingReceiver extends Thread{
                     System.out.println("Suspect message received " + message.getMessageContent().get("memberName") + "__" + Member.getLocalDateTime());
                     logger.info("Suspect message received " + message.getMessageContent().get("memberName"));
                     try{
-                        //TODO add a piece of code to set the status of a member to suspect
-                        //TODO add a piece of code which will send alive multicast if the suspect node is itself
+                        //add a piece of code to set the status of a member to suspect
+                        //add a piece of code which will send alive multicast if the suspect node is itself
                         if(message.getMessageContent().get("memberName").equals(FDProperties.getFDProperties().get("machineName"))){
                             Dissemination dissemination = new Dissemination();
                             int inc = Integer.parseInt((String) FDProperties.getFDProperties().get("incarnationNo"));
@@ -255,6 +256,7 @@ public class PingReceiver extends Thread{
                 case "confirm" :
                     System.out.println("Confirm message received " + message.getMessageContent().get("memberName") + "__" + Member.getLocalDateTime() );
                     logger.info("Confirm message received " + message.getMessageContent().get("memberName") );
+                    //TODO MP3 call a function to start re replication process
                     try {
                         //TODO add a piece of code that will remove the member from the list
                         if(!message.getMessageContent().get("memberName").equals(FDProperties.getFDProperties().get("machineName"))) {

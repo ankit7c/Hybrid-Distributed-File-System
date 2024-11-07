@@ -6,6 +6,7 @@ import org.example.entities.*;
 import java.io.*;
 import java.net.Socket;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Sender {
@@ -157,7 +158,7 @@ public class Sender {
                     hyDFSFileName,
                     member.getIpAddress(),
                     Integer.parseInt(member.getPort()),
-                    "CREATE",
+                    "UPLOAD",
                     "CREATE",
                     ""));
         }catch (Exception e){
@@ -201,7 +202,7 @@ public class Sender {
                     hyDFSFileName,
                     member.getIpAddress(),
                     Integer.parseInt(member.getPort()),
-                    "CREATE",
+                    "UPLOAD",
                     "APPEND",
                     ""));
         } catch (RuntimeException e) {
@@ -265,5 +266,29 @@ public class Sender {
     //TODO send a request to merge files
 
     //TODO write a code to send multi appends.
-
+    public void sendMultiAppendRequests(String hyDFSFileName, List<String> VMs, List<String> localFileNames) {
+        for(int i=0; i<localFileNames.size(); i++) {
+            int VMHash = HashFunction.hash(VMs.get(i));
+            Member member = MembershipList.getMemberById(VMHash);
+            try {
+                Map<String, Object> messageContent = new HashMap<>();
+                messageContent.put("messageName", "multi_append");
+                messageContent.put("senderName", FDProperties.getFDProperties().get("machineName"));
+                messageContent.put("senderIp", FDProperties.getFDProperties().get("machineIp"));
+                messageContent.put("senderPort", String.valueOf(FDProperties.getFDProperties().get("machinePort")));
+                messageContent.put("msgId", FDProperties.generateRandomMessageId());
+                messageContent.put("localFileName", localFileNames.get(i));
+                messageContent.put("hyDFSFileName", hyDFSFileName);
+                String senderPort = "" + FDProperties.getFDProperties().get("machinePort");
+                Message msg = new Message("sending_file",
+                        (String) FDProperties.getFDProperties().get("machineIp"),
+                        senderPort,
+                        messageContent);
+                String response = sendMessage(member.getIpAddress(), Integer.parseInt(member.getPort()), msg);
+                System.out.println(response);
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+        }
+    }
 }

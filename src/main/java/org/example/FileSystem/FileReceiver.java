@@ -1,7 +1,6 @@
 package org.example.FileSystem;
 
-import org.example.entities.FDProperties;
-import org.example.entities.FileTransferManager;
+import org.example.entities.*;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -9,15 +8,21 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 
 public class FileReceiver extends Thread {
     int port;
-    String localFileName;
+    String hyDFSFileName;
+
+    int tempCounter;
 
     public FileReceiver() {
         this.port = (int) FDProperties.getFDProperties().get("machinePort") + 20;
+        tempCounter = 0;
     }
 
     public void run(){
@@ -40,9 +45,10 @@ public class FileReceiver extends Thread {
                     String fileOp = null;
                     String fileType = null;
                     String message = null;
+                    int senderId = -1;
                     for (String part : metadataParts) {
                         if (part.startsWith("FILENAME:")) {
-                            localFileName = part.substring("FILENAME:".length());
+                            hyDFSFileName = part.substring("FILENAME:".length());
                         } else if (part.startsWith("SIZE:")) {
                             fileSize = Long.parseLong(part.substring("SIZE:".length()));
                         } else if (part.startsWith("TYPE:")) {
@@ -51,38 +57,85 @@ public class FileReceiver extends Thread {
                             fileOp = part.substring("OP:".length());
                         } else if (part.startsWith("MESSAGE:")) {
                             message = part.substring("MESSAGE:".length());
+                        } else if (part.startsWith("SENDERID:")) {
+                            senderId = Integer.parseInt(part.substring("SENDERID:".length()));
                         }
                     }
-                    System.out.println("Receiving File " + localFileName + " from " + socketChannel.getRemoteAddress());
+                    
+                    System.out.println("Receiving File " + hyDFSFileName + " from " + socketChannel.getRemoteAddress());
                     System.out.println(message);
 
-                    if (localFileName == null || fileSize == 0 || fileOp == null || fileType == null) {
+                    if (hyDFSFileName == null || fileSize == 0 || fileOp == null || fileType == null) {
                         System.out.println("Invalid metadata received");
                         continue; // Skip to the next connection if metadata is invalid
                     }
 
                     //Based on File Operation choose the option to create or append
                     FileChannel fileChannel = null;
-                    if(fileOp.equals("CREATE")){
-                        fileChannel = FileChannel.open(Paths.get(localFileName), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-                    }else if(fileOp.equals("APPEND")){
-                        fileChannel = FileChannel.open(Paths.get(localFileName), StandardOpenOption.APPEND, StandardOpenOption.WRITE);
+                    FileChannel tempFileChannel = null;
+                    if(fileType.equals("UPLOAD")) {
+                        if (fileOp.equals("CREATE")) {
+                            fileChannel = FileChannel.open(Paths.get(hyDFSFileName), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                        } else if (fileOp.equals("APPEND")) {
+                            fileChannel = FileChannel.open(Paths.get(hyDFSFileName), StandardOpenOption.APPEND, StandardOpenOption.WRITE);
+                            tempFileChannel = FileChannel.open(Paths.get(hyDFSFileName + tempCounter), StandardOpenOption.APPEND, StandardOpenOption.WRITE);
+                            tempCounter++;
+                        }
+                    }else if(fileType.equals("GET")) {
+                        fileChannel = FileChannel.open(Paths.get("local/" + hyDFSFileName), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
                     }
                     ByteBuffer buffer = ByteBuffer.allocateDirect(1024 * 1024); // 1 MB buffer
                     while (socketChannel.read(buffer) > 0) {
                         buffer.flip();
                         fileChannel.write(buffer);
+                        tempFileChannel.write(buffer);
                         buffer.clear();
                     }
-                    System.out.println("File received successfully!");
-                    System.out.println("File saved at " + localFileName);
-                    FileTransferManager.logEvent("File received: " + localFileName);
+                    System.out.println("File received successfully! and saved at " + hyDFSFileName);
+
+                    if(fileType.equals("UPLOAD")) {
+                        if(fileOp.equals("APPEND")) {
+                            StandardOpenOption option = StandardOpenOption.APPEND;
+                            //get next 2 nodes and send them the request
+                            List<Member> members = MembershipList.getNextMembers(HashFunction.hash(hyDFSFileName));
+                            for (Member member : members) {
+                                FileTransferManager.getRequestQueue().addRequest(new FileSender(
+                                        hyDFSFileName+tempCounter,
+                                        hyDFSFileName,
+                                        member.getIpAddress(),
+                                        Integer.parseInt(member.getPort()),
+                                        "REPLICA",
+                                        "APPEND",
+                                        ""));
+                            }
+                            tempCounter++;
+                        }else{
+                            FileData.addOwnedFile(hyDFSFileName);
+                            //et next 2 nodes and send them the request
+                            List<Member> members = MembershipList.getNextMembers(HashFunction.hash(hyDFSFileName));
+                            for (Member member : members) {
+                                FileTransferManager.getRequestQueue().addRequest(new FileSender(
+                                        hyDFSFileName+tempCounter,
+                                        hyDFSFileName,
+                                        member.getIpAddress(),
+                                        Integer.parseInt(member.getPort()),
+                                        "REPLICA",
+                                        "CREATE",
+                                        ""));
+                            }
+                        }
+                    }else if(fileType.equals("REPLICA")) {
+                        if (fileOp.equals("CREATE")) {
+                            FileData.addReplica(hyDFSFileName, senderId);
+                        }
+                    }
+                    FileTransferManager.logEvent("File received: " + hyDFSFileName);
 
                 } catch (IOException e) {
                     System.out.println("Error during file reception: " + e.getMessage());
-                    FileTransferManager.logEvent("File reception failed for " + localFileName + ": " + e.getMessage());
+                    FileTransferManager.logEvent("File reception failed for " + hyDFSFileName + ": " + e.getMessage());
                 }
-                localFileName = null;
+                hyDFSFileName = null;
 
             }
         } catch (IOException e) {

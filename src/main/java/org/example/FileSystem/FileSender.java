@@ -1,6 +1,7 @@
 package org.example.FileSystem;
 
 import org.example.entities.FileTransferManager;
+import org.example.entities.MembershipList;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -42,7 +43,7 @@ public class FileSender implements Runnable {
              FileChannel fileChannel = FileChannel.open(Paths.get(localFileName), StandardOpenOption.READ)) {
 
             //Prepare metadata and send it
-            String metadata = "FILENAME:" + hyDFSFileName + ";SIZE:" + fileChannel.size() + ";TYPE:" + sendType + ";OP:" + fileOp + ";MESSAGE:" + message;
+            String metadata = "FILENAME:" + hyDFSFileName + ";SIZE:" + fileChannel.size() + ";TYPE:" + sendType + ";OP:" + fileOp + ";MESSAGE:" + message + "SENDERID:" + MembershipList.selfId;
             ByteBuffer metadataBuffer = ByteBuffer.wrap(metadata.getBytes());
             socketChannel.write(metadataBuffer);
             // Ensure the metadata is sent before file transfer

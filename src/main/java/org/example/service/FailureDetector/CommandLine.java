@@ -5,6 +5,7 @@ import org.example.FileSystem.HashFunction;
 import org.example.FileSystem.Sender;
 import org.example.Server;
 import org.example.entities.FDProperties;
+import org.example.entities.FileData;
 import org.example.entities.Member;
 import org.example.entities.MembershipList;
 import org.slf4j.Logger;
@@ -93,20 +94,46 @@ public class CommandLine implements Runnable {
                         case "merge":
                             break;
                         case "ls":
+//                          TODO  below code is wrong ask each machine if they have this file
                             int fileNameHash = HashFunction.hash(list[1]);
                             List<Member> memberslist = new ArrayList<>();
                             memberslist.add(MembershipList.getMemberById(fileNameHash));
                             memberslist.addAll(MembershipList.getNextMembers(fileNameHash));
-                            System.out.println("File " + list[1] + " is present at below machines");
+                            System.out.println("File " + list[1] + " with id " + fileNameHash + " is present at below machines");
                             for (Member member : memberslist) {
                                 System.out.println("Member id: " + member.getId());
                             }
                             break;
                         case "store":
+//                            list the set of file names (along with their IDs) that are replicated (stored) on HyDFS at this
+//                            (local) process/VM. This should NOT include files stored on the local file system.
+//                            Also, print the process/VM’s ID on the ring.
+                            System.out.println("Stored HyDFS files on the " +
+                                    String.valueOf(FDProperties.getFDProperties().get("machineName")) +
+                                    " with ring id " + MembershipList.selfId);
+                            for(String fileName : FileData.getOwnedFiles()) {
+                                System.out.println(fileName);
+                            }
                             break;
                         case "getFromReplica":
                             sender.getFileFromReplica(list[1], list[2], list[3]);
                             break;
+                        case "list_mem_ids":
+//                            augment list_mem from MP2 to also print the ID on the ring which each node in the membership list maps to
+                            MembershipList.memberslist.forEach((k, v) -> System.out.println(k + "," + v));
+                            break;
+                        case "multiappend":
+                            String hyDFSFileName = list[1];
+                            List<String> VMs = new ArrayList<>();
+                            List<String> localFiles = new ArrayList<>();
+                            for(int i=2; i<list.length; i++) {
+                                if(list[i].contains("Machine")){
+                                    VMs.add(list[i]);
+                                }else{
+                                    localFiles.add(list[i]);
+                                }
+                            }
+                            sender.sendMultiAppendRequests(hyDFSFileName, VMs, localFiles);
                         default:
                             System.out.println("Invalid command");
                             logger.error("Invalid command");

@@ -21,6 +21,7 @@ public class MembershipList {
     public static ConcurrentSkipListMap<Integer, Member> memberslist = new ConcurrentSkipListMap<>();
     public static List<String> memberNames = new CopyOnWriteArrayList<>();
 //    public static Set<String> memberNames = new ConcurrentSkipListSet<>();;
+    public static int selfId = HashFunction.hash(String.valueOf(FDProperties.getFDProperties().get("machineName")));
     public static int pointer;
     private static final Logger logger = LoggerFactory.getLogger(MembershipList.class);
 
@@ -53,6 +54,7 @@ public class MembershipList {
             }
         });
     }
+
 
     public static void printMembersId() {
         System.out.println("Printing members at : " + FDProperties.getFDProperties().get("machineName"));

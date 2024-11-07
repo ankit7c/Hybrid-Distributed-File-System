@@ -1,6 +1,7 @@
 package org.example.FileSystem;
 
 import org.example.entities.FDProperties;
+import org.example.entities.FileData;
 import org.example.entities.FileTransferManager;
 import org.example.entities.Message;
 
@@ -35,7 +36,7 @@ public class Receiver extends Thread {
                     switch (message.getMessageName()){
 //                        case "creating_HDFS_file" :
 //                            try {
-//                                FileReceiver fileReceiver = new FileReceiver((String) message.getMessageContent().get("hyDFSFileName"), "sending_file");
+//                                FileReceiver fileReceiver = new FileReceiver(String.valueOf(message.getMessageContent().get("hyDFSFileName"), "sending_file");
 //                                fileReceiver.start();
 //                                out.println(response);
 //                                //TODO write a code to create replicas of the received file
@@ -46,47 +47,51 @@ public class Receiver extends Thread {
                         case "get_file" :
                             //TODO write code for sending the file which is demanded
                             try {
+                                String hyDFSFileName = String.valueOf(message.getMessageContent().get("hyDFSFileName"));
+                                if(FileData.checkReplica(hyDFSFileName)) {
+                                    FileTransferManager.getRequestQueue().addRequest(new FileSender(
+                                            hyDFSFileName,
+                                            hyDFSFileName,
+                                            message.getIpAddress().getHostAddress(),
+                                            Integer.parseInt(String.valueOf(message.getMessageContent().get("senderPort"))),
+                                            "GET",
+                                            "CREATE",
+                                            "Sending Requested File"
+                                    ));
+                                    response = "Successful";
+                                }else {
+                                    response = "Unsuccessful file not found";
+                                }
                                 out.println(response);
-//                                String receivePort = (String) message.getMessageContent().get("fileReceiverPort");
-                                String hyDFSFileName = (String) message.getMessageContent().get("hyDFSFileName");
-//                                FileSender fileSender = new FileSender((String) message.getMessageContent().get("hyDFSFileName"), message.getIpAddress().getHostAddress(), Integer.parseInt(receivePort));
-                                FileTransferManager.getRequestQueue().addRequest(new FileSender(
-                                        hyDFSFileName,
-                                        hyDFSFileName,
-                                        message.getIpAddress().getHostAddress(),
-                                        Integer.parseInt(String.valueOf(message.getMessageContent().get("senderPort"))),
-                                        "CREATE",
-                                        "CREATE",
-                                        "Sending Requested File"
-                                ));
-//                                fileSender.start();
                             }catch (Exception e){
                                 e.printStackTrace();
                             }
                             break;
                         case "get_file_from_replica" :
                             try {
+                                String hyDFSFileName = String.valueOf(message.getMessageContent().get("hyDFSFileName"));
+                                if(FileData.checkReplica(hyDFSFileName)){
+                                    FileTransferManager.getRequestQueue().addRequest(new FileSender(
+                                            hyDFSFileName,
+                                            hyDFSFileName,
+                                            message.getIpAddress().getHostAddress(),
+                                            Integer.parseInt(String.valueOf(message.getMessageContent().get("senderPort"))),
+                                            "GET",
+                                            "CREATE",
+                                            "Sending Requested File"
+                                    ));
+                                    response = "Successful";
+                                }else {
+                                    response = "Unsuccessful file not found";
+                                }
                                 out.println(response);
-//                                String receivePort = (String) message.getMessageContent().get("fileReceiverPort");
-                                String hyDFSFileName = (String) message.getMessageContent().get("hyDFSFileName");
-//                                FileSender fileSender = new FileSender((String) message.getMessageContent().get("hyDFSFileName"), message.getIpAddress().getHostAddress(), Integer.parseInt(receivePort));
-                                FileTransferManager.getRequestQueue().addRequest(new FileSender(
-                                        hyDFSFileName,
-                                        hyDFSFileName,
-                                        message.getIpAddress().getHostAddress(),
-                                        Integer.parseInt(String.valueOf(message.getMessageContent().get("senderPort"))),
-                                        "CREATE",
-                                        "CREATE",
-                                        "Sending Requested File"
-                                ));
-//                                fileSender.start();
                             }catch (Exception e){
                                 e.printStackTrace();
                             }
                             break;
 //                        case "append_file":
 //                            try {
-////                                FileReceiver fileReceiver = new FileReceiver((String) message.getMessageContent().get("hyDFSFileName"), "append_file");
+////                                FileReceiver fileReceiver = new FileReceiver(String.valueOf(message.getMessageContent().get("hyDFSFileName"), "append_file");
 ////                                fileReceiver.start();
 //                                //TODO write a code to append data to the replicas
 //                                //We can start a thread which will in backend send the data to the replicas
@@ -98,7 +103,7 @@ public class Receiver extends Thread {
 //                            break;
 //                        case "receive_replica":
 //                            try {
-//                                FileReceiver fileReceiver = new FileReceiver((String) message.getMessageContent().get("hyDFSFileName"), "receive_replica");
+//                                FileReceiver fileReceiver = new FileReceiver(String.valueOf(message.getMessageContent().get("hyDFSFileName"), "receive_replica");
 //                                fileReceiver.start();
 //                                out.println(response);
 //                                //TODO write a code to create replicas of the received file
@@ -108,15 +113,19 @@ public class Receiver extends Thread {
 //                            break;
 //                        case "append_replica":
 //                            try {
-//                                FileReceiver fileReceiver = new FileReceiver((String) message.getMessageContent().get("hyDFSFileName"), "append_replica");
+//                                FileReceiver fileReceiver = new FileReceiver(String.valueOf(message.getMessageContent().get("hyDFSFileName"), "append_replica");
 //                                fileReceiver.start();
 //                                out.println(response);
 //                            }catch (Exception e){
 //                                e.printStackTrace();
 //                            }
 //                            break;
-//                        case "receive_Multi_append":
-//                            break;
+                        case "multi_append":
+                            Sender sender = new Sender();
+                            String localFileName = String.valueOf(message.getMessageContent().get("localFileName"));
+                            String hyDFSFileName = String.valueOf(message.getMessageContent().get("hyDFSFileName"));
+                            sender.append_File(localFileName, hyDFSFileName);
+                            break;
                         case "/exit":
                     }
                     // Send response back to client
