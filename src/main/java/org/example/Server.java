@@ -1,5 +1,6 @@
 package org.example;
 
+import org.example.FileSystem.FileReceiver;
 import org.example.FileSystem.HashFunction;
 import org.example.FileSystem.Receiver;
 import org.example.entities.FDProperties;
@@ -21,6 +22,7 @@ public class Server{
 
     public void startServer(){
         // Start the Log Server
+        System.out.println("Starting Server");
         LogServer logServer = new LogServer();
         logServer.start();
 
@@ -48,19 +50,26 @@ public class Server{
         //start the Failure detector scheduler
         FDServer task = new FDServer(dissemination);
         task.start();
-
+        System.out.println("FDServer started");
         // Add itself to File membership list
-        MembershipList.addItself(new Member(HashFunction.hash((String) FDProperties.getFDProperties().get("machineName")),
-                (String) FDProperties.getFDProperties().get("machineName"),
-                (String) FDProperties.getFDProperties().get("machineIp"),
-                (String) FDProperties.getFDProperties().get("machinePort"),
-                (String) FDProperties.getFDProperties().get("versionNo"),
+//        HashFunction.hash();
+        String machineNAme = String.valueOf(FDProperties.getFDProperties().get("machineName"));
+        int i = HashFunction.hash(machineNAme);
+        MembershipList.addItself(new Member(HashFunction.hash(machineNAme),
+                String.valueOf(FDProperties.getFDProperties().get("machineName")),
+                String.valueOf(FDProperties.getFDProperties().get("machineIp")),
+                String.valueOf(FDProperties.getFDProperties().get("machinePort")),
+                String.valueOf(FDProperties.getFDProperties().get("versionNo")),
                 "alive",
                 Member.getLocalDateTime(),
-                (String) FDProperties.getFDProperties().get("incarnationNo")));
+                String.valueOf(FDProperties.getFDProperties().get("incarnationNo"))));
+        System.out.println("Start Receiver");
         Receiver receiver = new Receiver();
         receiver.start();
+        FileReceiver fileReceiver = new FileReceiver();
+        fileReceiver.start();
         FileSystem fileSystem = new FileSystem();
         fileSystem.start();
+        System.out.println("Server Started");
     }
 }

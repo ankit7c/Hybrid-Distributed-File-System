@@ -10,7 +10,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
-public class FileSender extends Thread {
+public class FileSender implements Runnable {
     String localFileName;
     String hyDFSFileName;
     // IpAddress and port where file is to be sent.
@@ -36,7 +36,7 @@ public class FileSender extends Thread {
         this.fileOp = fileOp;
         this.message = message;
     }
-    public void sendFile() {
+    public void run() {
         System.out.println("Connecting to server at " + IpAddress + ":" + port);
         try (SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress(IpAddress, port));
              FileChannel fileChannel = FileChannel.open(Paths.get(localFileName), StandardOpenOption.READ)) {

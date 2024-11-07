@@ -15,6 +15,7 @@ public class FileSystem extends Thread {
 //        sender.sendFile("example.txt", "127.0.0.1", 8081);
 
         // Processing tasks from queue
+        System.out.println("Starting File Sender Thread");
         while (true) {
             try {
                 Runnable request = manager.getRequestQueue().takeRequest();

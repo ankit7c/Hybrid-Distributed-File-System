@@ -84,9 +84,11 @@ public class CommandLine implements Runnable {
 
                         case "get":
                             sender.get_File(list[1], list[2]);
+                            System.out.println(list[0] + list[1] + list[2]);
                             break;
                         case "append":
-
+                            sender.append_File(list[1], list[2]);
+                            System.out.println(list[0] + list[1] + list[2]);
                             break;
                         case "merge":
                             break;

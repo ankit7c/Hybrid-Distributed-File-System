@@ -12,17 +12,15 @@ import java.nio.channels.SocketChannel;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
-public class FileReceiver implements Runnable {
+public class FileReceiver extends Thread {
     int port;
-    FileTransferManager manager;
     String localFileName;
 
-    public FileReceiver(FileTransferManager manager) {
+    public FileReceiver() {
         this.port = (int) FDProperties.getFDProperties().get("machinePort") + 20;
-        this.manager = manager;
     }
 
-    public void run() {
+    public void run(){
         try (ServerSocketChannel serverSocketChannel = ServerSocketChannel.open()) {
             serverSocketChannel.bind(new InetSocketAddress(port));
             System.out.println("Server listening on port " + port);
@@ -41,6 +39,7 @@ public class FileReceiver implements Runnable {
                     long fileSize = 0;
                     String fileOp = null;
                     String fileType = null;
+                    String message = null;
                     for (String part : metadataParts) {
                         if (part.startsWith("FILENAME:")) {
                             localFileName = part.substring("FILENAME:".length());
@@ -50,8 +49,12 @@ public class FileReceiver implements Runnable {
                             fileType = part.substring("TYPE:".length());
                         } else if (part.startsWith("OP:")) {
                             fileOp = part.substring("OP:".length());
+                        } else if (part.startsWith("MESSAGE:")) {
+                            message = part.substring("MESSAGE:".length());
                         }
                     }
+                    System.out.println("Receiving File " + localFileName + " from " + socketChannel.getRemoteAddress());
+                    System.out.println(message);
 
                     if (localFileName == null || fileSize == 0 || fileOp == null || fileType == null) {
                         System.out.println("Invalid metadata received");
@@ -73,17 +76,18 @@ public class FileReceiver implements Runnable {
                     }
                     System.out.println("File received successfully!");
                     System.out.println("File saved at " + localFileName);
-                    manager.logEvent("File received: " + localFileName);
+                    FileTransferManager.logEvent("File received: " + localFileName);
 
                 } catch (IOException e) {
                     System.out.println("Error during file reception: " + e.getMessage());
-                    manager.logEvent("File reception failed for " + localFileName + ": " + e.getMessage());
+                    FileTransferManager.logEvent("File reception failed for " + localFileName + ": " + e.getMessage());
                 }
                 localFileName = null;
 
             }
         } catch (IOException e) {
             e.printStackTrace();
+            System.out.println("Error during Server start: " + e.getMessage());
         }
     }
 
