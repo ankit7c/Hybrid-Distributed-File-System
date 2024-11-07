@@ -1,5 +1,6 @@
 package org.example.FileSystem;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.entities.FDProperties;
 import org.example.entities.FileData;
 import org.example.entities.FileTransferManager;
@@ -11,6 +12,8 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.List;
 
 public class Receiver extends Thread {
 
@@ -34,16 +37,6 @@ public class Receiver extends Thread {
                     System.out.println("Received from client: " + message);
                     String response = "Successful";
                     switch (message.getMessageName()){
-//                        case "creating_HDFS_file" :
-//                            try {
-//                                FileReceiver fileReceiver = new FileReceiver(String.valueOf(message.getMessageContent().get("hyDFSFileName"), "sending_file");
-//                                fileReceiver.start();
-//                                out.println(response);
-//                                //TODO write a code to create replicas of the received file
-//                            }catch (Exception e){
-//                                e.printStackTrace();
-//                            }
-//                            break;
                         case "get_file" :
                             //TODO write code for sending the file which is demanded
                             try {
@@ -89,43 +82,20 @@ public class Receiver extends Thread {
                                 e.printStackTrace();
                             }
                             break;
-//                        case "append_file":
-//                            try {
-////                                FileReceiver fileReceiver = new FileReceiver(String.valueOf(message.getMessageContent().get("hyDFSFileName"), "append_file");
-////                                fileReceiver.start();
-//                                //TODO write a code to append data to the replicas
-//                                //We can start a thread which will in backend send the data to the replicas
-//                                //After the replicas are updated we can send the result back to the querier.
-//                                out.println(response);
-//                            }catch (Exception e){
-//                                e.printStackTrace();
-//                            }
-//                            break;
-//                        case "receive_replica":
-//                            try {
-//                                FileReceiver fileReceiver = new FileReceiver(String.valueOf(message.getMessageContent().get("hyDFSFileName"), "receive_replica");
-//                                fileReceiver.start();
-//                                out.println(response);
-//                                //TODO write a code to create replicas of the received file
-//                            }catch (Exception e){
-//                                e.printStackTrace();
-//                            }
-//                            break;
-//                        case "append_replica":
-//                            try {
-//                                FileReceiver fileReceiver = new FileReceiver(String.valueOf(message.getMessageContent().get("hyDFSFileName"), "append_replica");
-//                                fileReceiver.start();
-//                                out.println(response);
-//                            }catch (Exception e){
-//                                e.printStackTrace();
-//                            }
-//                            break;
                         case "multi_append":
                             Sender sender = new Sender();
                             String localFileName = String.valueOf(message.getMessageContent().get("localFileName"));
                             String hyDFSFileName = String.valueOf(message.getMessageContent().get("hyDFSFileName"));
                             sender.append_File(localFileName, hyDFSFileName);
                             break;
+                        case "get_file_details":
+                            String[] requestFiles = String.valueOf(message.getMessageContent().get("hyDFSFileNames")).split(",");
+                            HashMap<String, List<String>> map = new HashMap<>();
+                            for(String requestFile : requestFiles){
+                                map.put(requestFile, FileTransferManager.getFileOperations(requestFile));
+                            }
+                            ObjectMapper objectMapper = new ObjectMapper();
+                            out.println(objectMapper.writeValueAsString(map));
                         case "/exit":
                     }
                     // Send response back to client

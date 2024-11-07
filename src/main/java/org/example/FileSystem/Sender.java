@@ -16,24 +16,6 @@ public class Sender {
         objectMapper = new ObjectMapper();
     }
 
-    public void temp() {
-        try (Socket socket = new Socket("localhost", 5000); // Connect to server on localhost and port 5000
-             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
-
-            // Send message to server
-            String message = "Hello from the client!";
-            out.println(message);
-            System.out.println("Sent to server: " + message);
-
-            // Receive response from server
-            String response = in.readLine();
-            System.out.println("Received from server: " + response);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     public String sendMessage(String IpAddress, int port, Message message) {
         try (Socket socket = new Socket(IpAddress, port+10);
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
@@ -53,35 +35,6 @@ public class Sender {
         }
     }
 
-//    public String sendFile(String IpAddress, int port, String localFileName, String hyDFSFileName) {
-//        try {
-////            int fileReceiverPort = port;
-//            Map<String, Object> messageContent = new HashMap<>();
-//            messageContent.put("messageName", "creating_HDFS_file");
-//            messageContent.put("senderName", FDProperties.getFDProperties().get("machineName"));
-//            messageContent.put("senderIp", FDProperties.getFDProperties().get("machineIp"));
-//            messageContent.put("senderPort", String.valueOf(FDProperties.getFDProperties().get("machinePort")));
-//            messageContent.put("msgId", FDProperties.generateRandomMessageId());
-//            messageContent.put("localFileName", localFileName);
-//            messageContent.put("hyDFSFileName", hyDFSFileName);
-//            String senderPort = "" + FDProperties.getFDProperties().get("machinePort");
-//            Message msg = new Message("sending_file",
-//                    (String) FDProperties.getFDProperties().get("machineIp"),
-//                    senderPort,
-//                    messageContent);
-//            String response = sendMessage(IpAddress, port, msg);
-//            //TODO send the file to the server
-//            if (response.equals("Successful")) {
-//                System.out.println(response);
-//                FileSender fileSender = new FileSender(localFileName, IpAddress, port);
-//                fileSender.start();
-//            }
-//            return response;
-//        }catch (Exception e){
-//            e.printStackTrace();
-//            return "Unsuccessful";
-//        }
-//    }
 
     public String getFileRequest(String IpAddress, int port, String localFileName, String hyDFSFileName, int fileReceiverPort) {
         try {
@@ -96,7 +49,7 @@ public class Sender {
             messageContent.put("hyDFSFileName", hyDFSFileName);
             String senderPort = "" + FDProperties.getFDProperties().get("machinePort");
             Message msg = new Message("sending_file",
-                    (String) FDProperties.getFDProperties().get("machineIp"),
+                    String.valueOf(FDProperties.getFDProperties().get("machineIp")),
                     senderPort,
                     messageContent);
             String response = sendMessage(IpAddress, port, msg);
@@ -106,45 +59,6 @@ public class Sender {
             return "Unsuccessful";
         }
     }
-
-//    public String appendFile(String IpAddress, int port, String localFileName, String hyDFSFileName) {
-//        try {
-//            Map<String, Object> messageContent = new HashMap<>();
-//            messageContent.put("messageName", "append_file");
-//            messageContent.put("senderName", FDProperties.getFDProperties().get("machineName"));
-//            messageContent.put("senderIp", FDProperties.getFDProperties().get("machineIp"));
-//            messageContent.put("senderPort", String.valueOf(FDProperties.getFDProperties().get("machinePort")));
-//            messageContent.put("msgId", FDProperties.generateRandomMessageId());
-//            messageContent.put("localFileName", localFileName);
-//            messageContent.put("hyDFSFileName", hyDFSFileName);
-//            String senderPort = "" + FDProperties.getFDProperties().get("machinePort");
-//            Message msg = new Message("sending_file",
-//                    (String) FDProperties.getFDProperties().get("machineIp"),
-//                    senderPort,
-//                    messageContent);
-//            String response = sendMessage(IpAddress, port, msg);
-//            //TODO send the file to the server
-//            int fileNameHash = HashFunction.hash(hyDFSFileName);
-//            Member member = MembershipList.getMemberById(fileNameHash);
-//            FileTransferManager.getRequestQueue().addRequest(new FileSender(
-//                    localFileName,
-//                    hyDFSFileName,
-//                    member.getIpAddress(),
-//                    Integer.parseInt(member.getPort()),
-//                    "CREATE",
-//                    "CREATE",
-//                    ""));
-//            if (response.equals("Successful")) {
-//                System.out.println(response);
-//                FileSender fileSender = new FileSender(localFileName, IpAddress, port);
-//                fileSender.start();
-//            }
-//            return response;
-//        }catch (Exception e){
-//            e.printStackTrace();
-//            return "Unsuccessful";
-//        }
-//    }
 
     //TODO send request to receive a file
     //TODO send a request to upload a file
@@ -212,40 +126,6 @@ public class Sender {
     }
 
     //TODO get a replica from a node
-//    public String getFileFromReplica(String VMName, String hyDFSFileName, String localFileName) {
-//        int hash = HashFunction.hash(VMName);
-//        Member member = MembershipList.getMemberById(hash);
-//        String IpAddress = member.getIpAddress();
-//        int port = Integer.parseInt(member.getPort());
-//        int fileReceiverPort = (int) FDProperties.getFDProperties().get("machinePort");
-//        try {
-//            Map<String, Object> messageContent = new HashMap<>();
-//            messageContent.put("messageName", "get_file_from_replica");
-//            messageContent.put("senderName", FDProperties.getFDProperties().get("machineName"));
-//            messageContent.put("senderIp", FDProperties.getFDProperties().get("machineIp"));
-//            messageContent.put("senderPort", String.valueOf(FDProperties.getFDProperties().get("machinePort")));
-//            messageContent.put("fileReceiverPort", String.valueOf(fileReceiverPort));
-//            messageContent.put("msgId", FDProperties.generateRandomMessageId());
-//            messageContent.put("localFileName", localFileName);
-//            messageContent.put("hyDFSFileName", hyDFSFileName);
-//            String senderPort = "" + FDProperties.getFDProperties().get("machinePort");
-//            Message msg = new Message("sending_file",
-//                    (String) FDProperties.getFDProperties().get("machineIp"),
-//                    senderPort,
-//                    messageContent);
-//            String response = sendMessage(IpAddress, port, msg);
-//            if (response.equals("Successful")) {
-//                System.out.println(response);
-//                FileReceiver fileReceiver = new FileReceiver(localFileName, "receive");
-//                fileReceiver.start();
-//            }
-//            return response;
-//        }catch (Exception e){
-//            e.printStackTrace();
-//            return "Unsuccessful";
-//        }
-//    }
-
     public String getFileFromReplica(String VMName, String hyDFSFileName, String localFileName) {
         try{
             int hash = HashFunction.hash(VMName);
@@ -281,7 +161,7 @@ public class Sender {
                 messageContent.put("hyDFSFileName", hyDFSFileName);
                 String senderPort = "" + FDProperties.getFDProperties().get("machinePort");
                 Message msg = new Message("sending_file",
-                        (String) FDProperties.getFDProperties().get("machineIp"),
+                        String.valueOf(FDProperties.getFDProperties().get("machineIp")),
                         senderPort,
                         messageContent);
                 String response = sendMessage(member.getIpAddress(), Integer.parseInt(member.getPort()), msg);
@@ -290,5 +170,67 @@ public class Sender {
                 e.printStackTrace();
             }
         }
+    }
+
+    // request : get_file_details
+    public HashMap<String, List<String>> getFileDetails(Member member, String request, String hyDFSFileNames) throws Exception {
+        try {
+            Map<String, Object> messageContent = new HashMap<>();
+            messageContent.put("messageName", request);
+            messageContent.put("senderName", FDProperties.getFDProperties().get("machineName"));
+            messageContent.put("senderIp", FDProperties.getFDProperties().get("machineIp"));
+            messageContent.put("senderPort", String.valueOf(FDProperties.getFDProperties().get("machinePort")));
+            messageContent.put("msgId", FDProperties.generateRandomMessageId());
+//        messageContent.put("localFileName", localFileNames);
+            //hyDFS Filenames should be comma separated
+            messageContent.put("hyDFSFileNames", hyDFSFileNames);
+            String senderPort = "" + FDProperties.getFDProperties().get("machinePort");
+            Message msg = new Message(request,
+                    String.valueOf(FDProperties.getFDProperties().get("machineIp")),
+                    senderPort,
+                    messageContent);
+            String response = sendMessage(member.getIpAddress(), Integer.parseInt(member.getPort()), msg);
+            ObjectMapper objectMapper = new ObjectMapper();
+            HashMap<String, List<String>> map = objectMapper.readValue(response, HashMap.class);
+            return map;
+        }catch (Exception e){
+            throw new Exception("Could not able to reconnect");
+        }
+    }
+
+    // Function is for merge and Re replication after failure
+    public void updateReplicas(List<String> fileNames){
+        //get two successors and ask them their fileOperation list to compare with ours for merging
+        try {
+            String files = "";
+            for (String fileName : fileNames) {
+                files += fileName + ",";
+            }
+            files = files.substring(0, files.length() - 1);
+            List<Member> members = MembershipList.getNextMembers(MembershipList.selfId);
+            for (Member member : members) {
+                HashMap<String, List<String>> map = getFileDetails(member, "get_file_details", files);
+                //Compare file details and take appropriate action
+                for (String fileName : fileNames) {
+                    if (map.containsKey(fileName)) {
+                        // compare the list of events to check if files are consistent
+                        // if not consistent then ask to replace the file
+                        // if yes then do nothing
+                    } else {
+                        //Send the file to the node.
+                    }
+                }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+
+        //If file not present then ask them to replicate the file. Can also use UPDATE/MERGE
+
+        //If logs are inconsistent then it means appends may be in wrong order or not received any update
+        //Send them those files under UPDATE/MERGE TYPE also with the file operations list.
+
+        //whenever you do these operations put a log event of merge successful
     }
 }

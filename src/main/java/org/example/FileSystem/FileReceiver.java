@@ -17,7 +17,8 @@ import java.util.List;
 public class FileReceiver extends Thread {
     int port;
     String hyDFSFileName;
-
+    String HyDFSFilePath = "HyDFS/";
+    String localFilePath = "local/";
     int tempCounter;
 
     public FileReceiver() {
@@ -75,14 +76,20 @@ public class FileReceiver extends Thread {
                     FileChannel tempFileChannel = null;
                     if(fileType.equals("UPLOAD")) {
                         if (fileOp.equals("CREATE")) {
-                            fileChannel = FileChannel.open(Paths.get(hyDFSFileName), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                            fileChannel = FileChannel.open(Paths.get(HyDFSFilePath + hyDFSFileName), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
                         } else if (fileOp.equals("APPEND")) {
-                            fileChannel = FileChannel.open(Paths.get(hyDFSFileName), StandardOpenOption.APPEND, StandardOpenOption.WRITE);
-                            tempFileChannel = FileChannel.open(Paths.get(hyDFSFileName + tempCounter), StandardOpenOption.APPEND, StandardOpenOption.WRITE);
+                            fileChannel = FileChannel.open(Paths.get(HyDFSFilePath + hyDFSFileName), StandardOpenOption.APPEND, StandardOpenOption.WRITE);
+                            tempFileChannel = FileChannel.open(Paths.get(localFilePath + hyDFSFileName + tempCounter), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
                             tempCounter++;
                         }
                     }else if(fileType.equals("GET")) {
-                        fileChannel = FileChannel.open(Paths.get("local/" + hyDFSFileName), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                        fileChannel = FileChannel.open(Paths.get(localFilePath + hyDFSFileName), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                    }else if(fileType.equals("REPLICA")) {
+                        if (fileOp.equals("CREATE")) {
+                            fileChannel = FileChannel.open(Paths.get(HyDFSFilePath + hyDFSFileName), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                        } else if (fileOp.equals("APPEND")) {
+                            fileChannel = FileChannel.open(Paths.get(HyDFSFilePath + hyDFSFileName), StandardOpenOption.APPEND, StandardOpenOption.WRITE);
+                        }
                     }
                     ByteBuffer buffer = ByteBuffer.allocateDirect(1024 * 1024); // 1 MB buffer
                     while (socketChannel.read(buffer) > 0) {
@@ -108,6 +115,7 @@ public class FileReceiver extends Thread {
                                         "APPEND",
                                         ""));
                             }
+                            FileTransferManager.logEvent("File Operation : Append : Successful : " + hyDFSFileName);
                             tempCounter++;
                         }else{
                             FileData.addOwnedFile(hyDFSFileName);
@@ -123,11 +131,16 @@ public class FileReceiver extends Thread {
                                         "CREATE",
                                         ""));
                             }
+                            FileTransferManager.logEvent("File Operation : Upload : Successful : " + hyDFSFileName);
                         }
                     }else if(fileType.equals("REPLICA")) {
-                        if (fileOp.equals("CREATE")) {
+                        if (fileOp.equals("APPEND")) {
+                            FileTransferManager.logEvent("File Operation : Append Replica : Successful : " + hyDFSFileName);
+                        }else{
                             FileData.addReplica(hyDFSFileName, senderId);
+                            FileTransferManager.logEvent("File Operation : Upload Replica : Successful : " + hyDFSFileName);
                         }
+
                     }
                     FileTransferManager.logEvent("File received: " + hyDFSFileName);
 

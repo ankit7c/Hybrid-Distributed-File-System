@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
  */
 public class MembershipList {
 
+    //For Failure Detection
     public static ConcurrentSkipListMap<String, Member> members = new ConcurrentSkipListMap<>();
     public static ConcurrentSkipListMap<Integer, Member> memberslist = new ConcurrentSkipListMap<>();
     public static List<String> memberNames = new CopyOnWriteArrayList<>();
