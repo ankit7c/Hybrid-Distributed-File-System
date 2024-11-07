@@ -26,7 +26,7 @@ public class FileData {
         replicaMap.put(fileName, ownerId);
     }
 
-    public static boolean checkReplica(String fileName) {
+    public static boolean checkFilePresent(String fileName) {
         return replicaMap.containsKey(fileName) || ownedFiles.contains(fileName);
     }
 

@@ -58,6 +58,13 @@ public class FileSender implements Runnable {
             System.out.println("File sent successfully!");
             result = "File sent successfully!";
             FileTransferManager.logEvent("File sent: " + localFileName);
+
+            ByteBuffer receiveMetadataBuffer = ByteBuffer.allocate(256); // assuming metadata is less than 256 bytes
+            socketChannel.read(receiveMetadataBuffer);
+            metadataBuffer.flip();
+            String receivedMetadata = new String(metadataBuffer.array(), 0, metadataBuffer.limit());
+            System.out.println("Received response: " + receivedMetadata);
+
         } catch (IOException e) {
             System.out.println("Error sending file: " + e.getMessage());
             result = "File not able to be sent!";

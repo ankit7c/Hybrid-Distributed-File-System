@@ -9,6 +9,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.example.entities.FileTransferManager.compareLogs;
+import static org.example.entities.FileTransferManager.getFileOperations;
+
 public class Sender {
     private ObjectMapper objectMapper;
 
@@ -88,21 +91,25 @@ public class Sender {
             //If any node is not there then ask for next node
             //If file not present then return File not found, for that need to check in all replicas
             //This request should go by default to Co-ordinator and then it would return the server name with the filepath and then request the file.
-
+            // TODO check if file is present in its own list , also implement file caching in future
+            if(FileData.checkFilePresent(hyDFSFileName)){
+                System.out.println(hyDFSFileName + " exists at the local machine under HyDFS/");
+                return "success";
+            }
             int fileNameHash = HashFunction.hash(hyDFSFileName);
             Member member = MembershipList.getMemberById(fileNameHash);
             String IpAddress = member.getIpAddress();
             String port = member.getPort();
             int fileReceiverPort = (int) FDProperties.getFDProperties().get("machinePort");
             String result = getFileRequest(IpAddress, Integer.parseInt(port), localFileName, hyDFSFileName, fileReceiverPort);
-            if (result.equals("Successful")) {
-                System.out.println(result);
-            }
-//            System.out.println("File receive was " + result);
+//            if (result.equals("Successful")) {
+//                System.out.println(result);
+//            }
+            System.out.println("File receive was " + result);
             return result;
         }catch (Exception e){
             e.printStackTrace();
-            return "Unable to receive file";
+            return "Unable to send receive file request";
         }
     }
 
@@ -215,10 +222,29 @@ public class Sender {
                     if (map.containsKey(fileName)) {
                         // compare the list of events to check if files are consistent
                         // if not consistent then ask to replace the file
+                        if(compareLogs(map.get(fileName), getFileOperations(fileName))){ // call the compare list function
+                            FileTransferManager.getRequestQueue().addRequest(new FileSender(
+                                    fileName,
+                                    fileName,
+                                    member.getIpAddress(),
+                                    Integer.parseInt(member.getPort()),
+                                    "REPLICA",
+                                    "CREATE",
+                                    ""));
+                        }
                         // if yes then do nothing
                     } else {
                         //Send the file to the node.
+                        FileTransferManager.getRequestQueue().addRequest(new FileSender(
+                                fileName,
+                                fileName,
+                                member.getIpAddress(),
+                                Integer.parseInt(member.getPort()),
+                                "REPLICA",
+                                "CREATE",
+                                ""));
                     }
+                    FileTransferManager.logEvent("File Operation : Upload : Successful : " + fileName);
                 }
             }
         }catch (Exception e){
@@ -232,5 +258,6 @@ public class Sender {
         //Send them those files under UPDATE/MERGE TYPE also with the file operations list.
 
         //whenever you do these operations put a log event of merge successful
+
     }
 }

@@ -41,7 +41,7 @@ public class Receiver extends Thread {
                             //TODO write code for sending the file which is demanded
                             try {
                                 String hyDFSFileName = String.valueOf(message.getMessageContent().get("hyDFSFileName"));
-                                if(FileData.checkReplica(hyDFSFileName)) {
+                                if(FileData.checkFilePresent(hyDFSFileName)) {
                                     FileTransferManager.getRequestQueue().addRequest(new FileSender(
                                             hyDFSFileName,
                                             hyDFSFileName,
@@ -63,7 +63,7 @@ public class Receiver extends Thread {
                         case "get_file_from_replica" :
                             try {
                                 String hyDFSFileName = String.valueOf(message.getMessageContent().get("hyDFSFileName"));
-                                if(FileData.checkReplica(hyDFSFileName)){
+                                if(FileData.checkFilePresent(hyDFSFileName)){
                                     FileTransferManager.getRequestQueue().addRequest(new FileSender(
                                             hyDFSFileName,
                                             hyDFSFileName,

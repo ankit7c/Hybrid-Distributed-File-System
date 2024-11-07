@@ -14,6 +14,8 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 
+import static org.example.entities.FileData.checkFilePresent;
+
 public class FileReceiver extends Thread {
     int port;
     String hyDFSFileName;
@@ -47,6 +49,7 @@ public class FileReceiver extends Thread {
                     String fileType = null;
                     String message = null;
                     int senderId = -1;
+//                    String response = "";
                     for (String part : metadataParts) {
                         if (part.startsWith("FILENAME:")) {
                             hyDFSFileName = part.substring("FILENAME:".length());
@@ -68,8 +71,13 @@ public class FileReceiver extends Thread {
 
                     if (hyDFSFileName == null || fileSize == 0 || fileOp == null || fileType == null) {
                         System.out.println("Invalid metadata received");
+//                        response = "Invalid metadata received";
                         continue; // Skip to the next connection if metadata is invalid
                     }
+//                    if(checkFilePresent(hyDFSFileName) && fileOp.equals("CREATE")){
+//                        System.out.println("File exists and overwriting the old file : " + hyDFSFileName);
+//                        response = "File exists and overwriting the old file : " + hyDFSFileName;
+//                    }
 
                     //Based on File Operation choose the option to create or append
                     FileChannel fileChannel = null;
@@ -123,7 +131,7 @@ public class FileReceiver extends Thread {
                             List<Member> members = MembershipList.getNextMembers(HashFunction.hash(hyDFSFileName));
                             for (Member member : members) {
                                 FileTransferManager.getRequestQueue().addRequest(new FileSender(
-                                        hyDFSFileName+tempCounter,
+                                        hyDFSFileName,
                                         hyDFSFileName,
                                         member.getIpAddress(),
                                         Integer.parseInt(member.getPort()),
@@ -143,6 +151,13 @@ public class FileReceiver extends Thread {
 
                     }
                     FileTransferManager.logEvent("File received: " + hyDFSFileName);
+
+//                    if(response.isBlank())
+//                        response = "File received Successfully";
+//                    ByteBuffer responseDataBuffer = ByteBuffer.wrap(response.getBytes());
+//                    socketChannel.write(responseDataBuffer);
+//                    // Ensure the metadata is sent before file transfer
+//                    socketChannel.socket().getOutputStream().flush();
 
                 } catch (IOException e) {
                     System.out.println("Error during file reception: " + e.getMessage());

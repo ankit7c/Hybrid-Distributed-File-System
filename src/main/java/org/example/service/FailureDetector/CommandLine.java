@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
@@ -92,6 +93,8 @@ public class CommandLine implements Runnable {
                             System.out.println(list[0] + list[1] + list[2]);
                             break;
                         case "merge":
+                            String hyDFSFile = list[1];
+                            sender.updateReplicas(Arrays.asList(hyDFSFile));
                             break;
                         case "ls":
 //                          TODO  below code is wrong ask each machine if they have this file
@@ -134,6 +137,8 @@ public class CommandLine implements Runnable {
                                 }
                             }
                             sender.sendMultiAppendRequests(hyDFSFileName, VMs, localFiles);
+                            break;
+
                         default:
                             System.out.println("Invalid command");
                             logger.error("Invalid command");

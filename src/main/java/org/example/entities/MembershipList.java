@@ -128,7 +128,7 @@ public class MembershipList {
     }
 
     public static List<Member> getNextMembers(int id){
-        //TDOO MP3 change member to memberlist
+        //TODO MP3 change member to memberlist
         List<Member> sortedMembers = members.values().stream()
                 .sorted(Comparator.comparingInt(Member::getId))
                 .collect(Collectors.toList());
@@ -166,8 +166,5 @@ public class MembershipList {
         }
     }
 
-    public static Member getCoordinator(String filename){
-        int co = HashFunction.hashCo(filename);
-        return getMemberById(co);
-    }
+
 }
