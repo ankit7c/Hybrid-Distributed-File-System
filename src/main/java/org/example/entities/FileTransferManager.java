@@ -50,4 +50,46 @@ public class FileTransferManager {
     }
 
     //TODO compare two file operations
+    public static boolean compareLogs( List<String> originalLogs,List<String> replicaLogs){
+        int i=0;
+        int j=0;
+        while(i<originalLogs.size() && j<replicaLogs.size()){
+            String originalString =  getOperationFromOriginal(originalLogs.get(i));
+            String replicaString = getOperationFromReplicaLog(replicaLogs.get(j));
+
+            if(!originalString.equals(replicaString)) {
+                return false;
+            }
+
+            if(originalString.equals("Upload") && replicaString.equals("Upload")) {
+                break;
+            }
+
+            i++;
+            j++;
+
+        }
+
+        return true;
+    }
+
+    private static String getOperationFromOriginal(String original){
+        if(original!=null){
+            String[] parts = original.split(" : ");
+            return parts[1];
+        }else{
+            return null;
+        }
+
+    }
+
+    private static String getOperationFromReplicaLog(String replica) {
+        if (replica != null) {
+            String[] parts = replica.split(" : ");
+            return  parts[1].split(" ")[0];
+        } else {
+            return null;
+        }
+    }
+
 }
