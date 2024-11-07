@@ -1,6 +1,8 @@
 package org.example.entities;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -26,5 +28,20 @@ public class FileData {
 
     public static boolean checkReplica(String fileName) {
         return replicaMap.containsKey(fileName) || ownedFiles.contains(fileName);
+    }
+
+    public static List<String> getAndRemoveReplicasOfANode(int nodeId) {
+        List<String> files = new ArrayList<>();
+        for(Map.Entry<String,Integer> entry: replicaMap.entrySet()){
+                if(entry.getValue() == nodeId){
+                    files.add(entry.getKey());
+                    replicaMap.remove(entry.getKey());
+                }
+        }
+        return files;
+    }
+
+    public static void addOwnedFiles(List<String>ownedFiles) {
+        FileData.ownedFiles.addAll(ownedFiles);
     }
 }

@@ -157,6 +157,7 @@ public class FDServer extends Thread {
                         if (duration.toMillis() > (int) FDProperties.getFDProperties().get("suspicionProtocolPeriod")) {
                             logger.debug("Member " + member.getName() + " was in suspect for long time. Sending a failed response");
                             dissemination.sendConfirmMessage(member);
+                            //TODO MP3 call replication here as well
                         }
                     }
                     //Selects a member at random
@@ -196,6 +197,11 @@ public class FDServer extends Thread {
                             } else {
                                 //Removing the node from the list
                                 //TODO MP3 call a function to start re replication process
+
+
+                                // todo get own ID
+                                MembershipList.failedNodes.add(member.getId());
+
                                 dissemination.sendFailedMessage(member);
                             }
                         }

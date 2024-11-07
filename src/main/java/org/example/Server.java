@@ -1,5 +1,6 @@
 package org.example;
 
+import org.example.FileSystem.Convergence;
 import org.example.FileSystem.FileReceiver;
 import org.example.FileSystem.HashFunction;
 import org.example.FileSystem.Receiver;
@@ -70,6 +71,9 @@ public class Server{
         fileReceiver.start();
         FileSystem fileSystem = new FileSystem();
         fileSystem.start();
+        Convergence convergence = new Convergence();
+        convergence.start();
+
         System.out.println("Server Started");
     }
 }

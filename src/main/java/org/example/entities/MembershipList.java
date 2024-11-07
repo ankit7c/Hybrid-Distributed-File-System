@@ -21,6 +21,7 @@ public class MembershipList {
     public static ConcurrentSkipListMap<String, Member> members = new ConcurrentSkipListMap<>();
     public static ConcurrentSkipListMap<Integer, Member> memberslist = new ConcurrentSkipListMap<>();
     public static List<String> memberNames = new CopyOnWriteArrayList<>();
+    public static List<Integer> failedNodes = new CopyOnWriteArrayList<>();
 //    public static Set<String> memberNames = new ConcurrentSkipListSet<>();;
     public static int selfId = HashFunction.hash(String.valueOf(FDProperties.getFDProperties().get("machineName")));
     public static int pointer;
@@ -38,11 +39,14 @@ public class MembershipList {
     }
 
     public static void removeMember(String name) {
-        memberslist.remove(members.get(name).getId());
+       // memberslist.remove(members.get(name).getId());
         members.remove(name);
         memberNames.remove(name);
     }
 
+    public static void RemoveFromMembersList(int memberId){
+        memberslist.remove(memberId);
+    }
     public static void printMembers() {
 //        System.out.println("Printing members at :" + FDProperties.getFDProperties().get("machineName"));
         members.forEach((k, v) -> {
@@ -124,6 +128,7 @@ public class MembershipList {
     }
 
     public static List<Member> getNextMembers(int id){
+        //TDOO MP3 change member to memberlist
         List<Member> sortedMembers = members.values().stream()
                 .sorted(Comparator.comparingInt(Member::getId))
                 .collect(Collectors.toList());
