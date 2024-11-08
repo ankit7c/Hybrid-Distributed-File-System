@@ -2,34 +2,43 @@ package org.example.FileSystem;
 
 import org.example.entities.FileData;
 import org.example.entities.MembershipList;
+import org.example.service.Log.LogServer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.sql.SQLOutput;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Convergence extends Thread {
-
+    private static final Logger logger = LoggerFactory.getLogger(Convergence.class);
     public void run() {
         while (true) {
             try {
                 Sender s = new Sender();
                 List<Integer> sortedKeys = new CopyOnWriteArrayList<>(MembershipList.memberslist.keySet());
-
+                if(MembershipList.failedNodes.size()>0){
+                    System.out.println("Some Nodes Failed");
+                }
                 for (int key : MembershipList.failedNodes) {
                     MembershipList.RemoveFromMembersList(key);
                 }
                 List<String> ownedFiles = FileData.getOwnedFiles();
                 for (Integer failedNodeId : MembershipList.failedNodes) {
-
+                    System.out.println("Starting re-replication of files of node " +failedNodeId);
                     String status = checkPredecessorOrSuccessor(failedNodeId, MembershipList.selfId,sortedKeys);
                     switch (status) {
                         case "Successor1":
+                            System.out.println("Failed Node was successor1 for my node.  my node id is" + MembershipList.selfId);
                             s.updateReplicas(ownedFiles);
                             break;
                         case "Successor2":
+                            System.out.println("Failed Node was successor2 for my node.  my node id is" + MembershipList.selfId);
                             s.updateReplicas(ownedFiles);
                             break;
 
                         case "Predecessor":
+                            System.out.println("Failed Node was Predecessor for my node.  my node id is" + MembershipList.selfId);
                             List<String> replicaFilesOfFailedNode = FileData.getAndRemoveReplicasOfANode(failedNodeId);
                             FileData.addOwnedFiles(replicaFilesOfFailedNode);
                             List<String> updatedownedFiles = FileData.getOwnedFiles();
@@ -40,6 +49,7 @@ public class Convergence extends Thread {
                     }
                 }
                 MembershipList.failedNodes.clear();
+                System.out.println("re-replication process completed");
                 Thread.sleep(10000);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);

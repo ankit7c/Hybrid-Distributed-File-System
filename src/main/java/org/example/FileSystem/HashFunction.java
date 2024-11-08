@@ -2,13 +2,27 @@ package org.example.FileSystem;
 
 public class HashFunction {
 
+//    public static int hash(String input) {
+//        int asciiSum = 0;
+//        for (int i = 0; i < input.length(); i++) {
+//            asciiSum += input.charAt(i);  // Cast char to int to get ASCII value
+//        }
+//        return asciiSum % 16;
+//    }
+
     public static int hash(String input) {
-        int asciiSum = 0;
+        int hash = 0;
+        int prime = 31; // A prime number for multiplier
+        int modulus = 16; // We want the hash to be in range 0-15
+
+        // Loop through each character in the string
         for (int i = 0; i < input.length(); i++) {
-            asciiSum += input.charAt(i);  // Cast char to int to get ASCII value
+            hash = (hash * prime + input.charAt(i)) % modulus;
         }
-        return asciiSum % 16;
+
+        return hash;
     }
+
 
     public static int hashCo(String input) {
         int asciiSum = 0;
