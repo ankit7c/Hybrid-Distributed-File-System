@@ -92,19 +92,16 @@ public class Sender {
             //If file not present then return File not found, for that need to check in all replicas
             //This request should go by default to Co-ordinator and then it would return the server name with the filepath and then request the file.
             // TODO check if file is present in its own list , also implement file caching in future
-            if(FileData.checkFilePresent(hyDFSFileName)){
-                System.out.println(hyDFSFileName + " exists at the local machine under HyDFS/");
-                return "success";
-            }
+//            if(FileData.checkFilePresent(hyDFSFileName)){
+//                System.out.println(hyDFSFileName + " exists at the local machine under HyDFS/");
+//                return "success";
+//            }
             int fileNameHash = HashFunction.hash(hyDFSFileName);
             Member member = MembershipList.getMemberById(fileNameHash);
             String IpAddress = member.getIpAddress();
             String port = member.getPort();
             int fileReceiverPort = (int) FDProperties.getFDProperties().get("machinePort");
             String result = getFileRequest(IpAddress, Integer.parseInt(port), localFileName, hyDFSFileName, fileReceiverPort);
-//            if (result.equals("Successful")) {
-//                System.out.println(result);
-//            }
             System.out.println("File receive was " + result);
             return result;
         }catch (Exception e){
@@ -197,6 +194,7 @@ public class Sender {
                     senderPort,
                     messageContent);
             String response = sendMessage(member.getIpAddress(), Integer.parseInt(member.getPort()), msg);
+            System.out.println(response);
             ObjectMapper objectMapper = new ObjectMapper();
             HashMap<String, List<String>> map = objectMapper.readValue(response, HashMap.class);
             return map;
@@ -211,20 +209,26 @@ public class Sender {
         try {
             String files = "";
             for (String fileName : fileNames) {
+//                System.out.println(fileName);
                 files += fileName + ",";
             }
+//            System.out.println(files);
             files = files.substring(0, files.length() - 1);
+//            System.out.println(files);
             List<Member> members = MembershipList.getNextMembers(MembershipList.selfId);
             for (Member member : members) {
+//                System.out.println(member.getName());
                 HashMap<String, List<String>> map = getFileDetails(member, "get_file_details", files);
+
                 //Compare file details and take appropriate action
                 for (String fileName : fileNames) {
-                    if (map.containsKey(fileName)) {
+                    if (map.containsKey(fileName) || map.get(fileName)!=null) {
                         // compare the list of events to check if files are consistent
                         // if not consistent then ask to replace the file
+//                        System.out.println("File existed" + member.getName() + fileName);
                         if(compareLogs(map.get(fileName), getFileOperations(fileName))){ // call the compare list function
                             FileTransferManager.getRequestQueue().addRequest(new FileSender(
-                                    fileName,
+                                    "HyDFS/" + fileName,
                                     fileName,
                                     member.getIpAddress(),
                                     Integer.parseInt(member.getPort()),
@@ -235,8 +239,9 @@ public class Sender {
                         // if yes then do nothing
                     } else {
                         //Send the file to the node.
+//                        System.out.println("File did not existed" + member.getName() + fileName);
                         FileTransferManager.getRequestQueue().addRequest(new FileSender(
-                                fileName,
+                                "HyDFS/" + fileName,
                                 fileName,
                                 member.getIpAddress(),
                                 Integer.parseInt(member.getPort()),

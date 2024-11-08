@@ -1,6 +1,7 @@
 package org.example.FileSystem;
 
 import org.example.entities.*;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -35,60 +36,53 @@ public class FileReceiver extends Thread {
             while (true) {
                 try (SocketChannel socketChannel = serverSocketChannel.accept()) {
 
-                    // Step 1: Read the metadata
-                    ByteBuffer metadataBuffer = ByteBuffer.allocate(256); // assuming metadata is less than 256 bytes
-                    socketChannel.read(metadataBuffer);
-                    metadataBuffer.flip();
-                    String metadata = new String(metadataBuffer.array(), 0, metadataBuffer.limit());
-
-                    // Parse the metadata to extract filename and size (assuming format "FILENAME:filename;SIZE:size")
-                    String[] metadataParts = metadata.split(";");
-
-                    long fileSize = 0;
-                    String fileOp = null;
-                    String fileType = null;
-                    String message = null;
-                    int senderId = -1;
-//                    String response = "";
-                    for (String part : metadataParts) {
-                        if (part.startsWith("FILENAME:")) {
-                            hyDFSFileName = part.substring("FILENAME:".length());
-                        } else if (part.startsWith("SIZE:")) {
-                            fileSize = Long.parseLong(part.substring("SIZE:".length()));
-                        } else if (part.startsWith("TYPE:")) {
-                            fileType = part.substring("TYPE:".length());
-                        } else if (part.startsWith("OP:")) {
-                            fileOp = part.substring("OP:".length());
-                        } else if (part.startsWith("MESSAGE:")) {
-                            message = part.substring("MESSAGE:".length());
-                        } else if (part.startsWith("SENDERID:")) {
-                            senderId = Integer.parseInt(part.substring("SENDERID:".length()));
+                    ByteBuffer metadataLengthBuffer = ByteBuffer.allocate(4);
+                    while (metadataLengthBuffer.hasRemaining()) {
+                        int bytesRead = socketChannel.read(metadataLengthBuffer);
+                        if (bytesRead == -1) {
+                            throw new IOException("Channel closed prematurely while reading metadata length");
                         }
                     }
-                    
-                    System.out.println("Receiving File " + hyDFSFileName + " from " + socketChannel.getRemoteAddress());
-                    System.out.println(message);
 
+                    metadataLengthBuffer.flip();
+                    int metadataLength = metadataLengthBuffer.getInt();
+
+                    ByteBuffer metadataBuffer = ByteBuffer.allocate(metadataLength);
+                    while (metadataBuffer.hasRemaining()) {
+                        int bytesRead = socketChannel.read(metadataBuffer);
+                        if (bytesRead == -1) {
+                            throw new IOException("Channel closed prematurely while reading metadata");
+                        }
+                    }
+                    metadataBuffer.flip();
+                    String metadataJsonString = new String(metadataBuffer.array(), 0, metadataBuffer.limit());
+
+                    System.out.println("Printing json" + metadataJsonString);
+                    JSONObject metadataJson = new JSONObject(metadataJsonString);
+                    String hyDFSFileName = metadataJson.getString("FILENAME");
+                    long fileSize = metadataJson.getLong("SIZE");
+                    String fileType = metadataJson.getString("TYPE");
+                    String fileOp = metadataJson.getString("OP");
+                    int senderId = metadataJson.getInt("SENDERID");
+
+                    System.out.println(hyDFSFileName + fileSize + fileOp + fileType);
                     if (hyDFSFileName == null || fileSize == 0 || fileOp == null || fileType == null) {
                         System.out.println("Invalid metadata received");
-//                        response = "Invalid metadata received";
                         continue; // Skip to the next connection if metadata is invalid
                     }
-//                    if(checkFilePresent(hyDFSFileName) && fileOp.equals("CREATE")){
-//                        System.out.println("File exists and overwriting the old file : " + hyDFSFileName);
-//                        response = "File exists and overwriting the old file : " + hyDFSFileName;
-//                    }
 
                     //Based on File Operation choose the option to create or append
                     FileChannel fileChannel = null;
                     FileChannel tempFileChannel = null;
+                    boolean isTempFilePresent = false;
                     if(fileType.equals("UPLOAD")) {
                         if (fileOp.equals("CREATE")) {
                             fileChannel = FileChannel.open(Paths.get(HyDFSFilePath + hyDFSFileName), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
                         } else if (fileOp.equals("APPEND")) {
                             fileChannel = FileChannel.open(Paths.get(HyDFSFilePath + hyDFSFileName), StandardOpenOption.APPEND, StandardOpenOption.WRITE);
-                            tempFileChannel = FileChannel.open(Paths.get(localFilePath + hyDFSFileName + tempCounter), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-                            tempCounter++;
+                            tempFileChannel = FileChannel.open(Paths.get(localFilePath + "temp" + tempCounter), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+
+                            isTempFilePresent = true;
                         }
                     }else if(fileType.equals("GET")) {
                         fileChannel = FileChannel.open(Paths.get(localFilePath + hyDFSFileName), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
@@ -103,10 +97,17 @@ public class FileReceiver extends Thread {
                     while (socketChannel.read(buffer) > 0) {
                         buffer.flip();
                         fileChannel.write(buffer);
-                        tempFileChannel.write(buffer);
+                        if(isTempFilePresent) {
+                            buffer.rewind(); // Set position back to 0
+                            tempFileChannel.write(buffer);
+                        }
                         buffer.clear();
                     }
+                    buffer.clear();
                     System.out.println("File received successfully! and saved at " + hyDFSFileName);
+
+                    if (fileChannel != null) fileChannel.close();
+                    if (isTempFilePresent && tempFileChannel != null) tempFileChannel.close();
 
                     if(fileType.equals("UPLOAD")) {
                         if(fileOp.equals("APPEND")) {
@@ -115,7 +116,7 @@ public class FileReceiver extends Thread {
                             List<Member> members = MembershipList.getNextMembers(HashFunction.hash(hyDFSFileName));
                             for (Member member : members) {
                                 FileTransferManager.getRequestQueue().addRequest(new FileSender(
-                                        hyDFSFileName+tempCounter,
+                                        localFilePath + "temp" + tempCounter,
                                         hyDFSFileName,
                                         member.getIpAddress(),
                                         Integer.parseInt(member.getPort()),
@@ -124,14 +125,14 @@ public class FileReceiver extends Thread {
                                         ""));
                             }
                             FileTransferManager.logEvent("File Operation : Append : Successful : " + hyDFSFileName);
-                            tempCounter++;
+
                         }else{
                             FileData.addOwnedFile(hyDFSFileName);
                             //et next 2 nodes and send them the request
                             List<Member> members = MembershipList.getNextMembers(HashFunction.hash(hyDFSFileName));
                             for (Member member : members) {
                                 FileTransferManager.getRequestQueue().addRequest(new FileSender(
-                                        hyDFSFileName,
+                                        HyDFSFilePath + hyDFSFileName,
                                         hyDFSFileName,
                                         member.getIpAddress(),
                                         Integer.parseInt(member.getPort()),
@@ -151,16 +152,9 @@ public class FileReceiver extends Thread {
 
                     }
                     FileTransferManager.logEvent("File received: " + hyDFSFileName);
-
-//                    if(response.isBlank())
-//                        response = "File received Successfully";
-//                    ByteBuffer responseDataBuffer = ByteBuffer.wrap(response.getBytes());
-//                    socketChannel.write(responseDataBuffer);
-//                    // Ensure the metadata is sent before file transfer
-//                    socketChannel.socket().getOutputStream().flush();
-
+                    tempCounter++;
                 } catch (IOException e) {
-                    System.out.println("Error during file reception: " + e.getMessage());
+                    e.printStackTrace();
                     FileTransferManager.logEvent("File reception failed for " + hyDFSFileName + ": " + e.getMessage());
                 }
                 hyDFSFileName = null;

@@ -30,11 +30,13 @@ public class Convergence extends Thread {
                     switch (status) {
                         case "Successor1":
                             System.out.println("Failed Node was successor1 for my node.  my node id is" + MembershipList.selfId);
-                            s.updateReplicas(ownedFiles);
+                            if(!ownedFiles.isEmpty())
+                                s.updateReplicas(ownedFiles);
                             break;
                         case "Successor2":
                             System.out.println("Failed Node was successor2 for my node.  my node id is" + MembershipList.selfId);
-                            s.updateReplicas(ownedFiles);
+                            if(!ownedFiles.isEmpty())
+                                s.updateReplicas(ownedFiles);
                             break;
 
                         case "Predecessor":
@@ -42,14 +44,15 @@ public class Convergence extends Thread {
                             List<String> replicaFilesOfFailedNode = FileData.getAndRemoveReplicasOfANode(failedNodeId);
                             FileData.addOwnedFiles(replicaFilesOfFailedNode);
                             List<String> updatedownedFiles = FileData.getOwnedFiles();
-                            s.updateReplicas(updatedownedFiles);
+                            if(!updatedownedFiles.isEmpty())
+                                s.updateReplicas(updatedownedFiles);
                             break;
                         default:
                             break;
                     }
                 }
                 MembershipList.failedNodes.clear();
-                System.out.println("re-replication process completed");
+//System.out.println("re-replication process completed");
                 Thread.sleep(10000);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);

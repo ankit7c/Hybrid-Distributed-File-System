@@ -129,7 +129,7 @@ public class MembershipList {
 
     public static List<Member> getNextMembers(int id){
         //TODO MP3 change member to memberlist
-        List<Member> sortedMembers = members.values().stream()
+        List<Member> sortedMembers = memberslist.values().stream()
                 .sorted(Comparator.comparingInt(Member::getId))
                 .collect(Collectors.toList());
         // Find the starting index where Member.id >= given id

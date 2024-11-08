@@ -2,6 +2,7 @@ package org.example.FileSystem;
 
 import org.example.entities.FileTransferManager;
 import org.example.entities.MembershipList;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -18,7 +19,7 @@ public class FileSender implements Runnable {
     String IpAddress;
     int port;
     String result;
-    String sendType;
+    String fileType;
     String fileOp;
     String message;
 
@@ -26,14 +27,14 @@ public class FileSender implements Runnable {
                       String hyDFSFileName,
                       String IpAddress,
                       int port,
-                      String sendType,
+                      String fileType,
                       String fileOp,
                       String message) {
         this.localFileName = localFileName;
         this.hyDFSFileName = hyDFSFileName;
         this.IpAddress = IpAddress;
         this.port = port + 20;
-        this.sendType = sendType;
+        this.fileType = fileType;
         this.fileOp = fileOp;
         this.message = message;
     }
@@ -41,13 +42,23 @@ public class FileSender implements Runnable {
         System.out.println("Connecting to server at " + IpAddress + ":" + port);
         try (SocketChannel socketChannel = SocketChannel.open(new InetSocketAddress(IpAddress, port));
              FileChannel fileChannel = FileChannel.open(Paths.get(localFileName), StandardOpenOption.READ)) {
+            System.out.println("Sending file");
 
-            //Prepare metadata and send it
-            String metadata = "FILENAME:" + hyDFSFileName + ";SIZE:" + fileChannel.size() + ";TYPE:" + sendType + ";OP:" + fileOp + ";MESSAGE:" + message + "SENDERID:" + MembershipList.selfId;
-            ByteBuffer metadataBuffer = ByteBuffer.wrap(metadata.getBytes());
+            JSONObject metadataJson = new JSONObject();
+            metadataJson.put("FILENAME", hyDFSFileName);
+            metadataJson.put("SIZE", fileChannel.size());
+            metadataJson.put("TYPE", fileType);
+            metadataJson.put("OP", fileOp);
+            metadataJson.put("SENDERID", MembershipList.selfId);
+
+            byte[] metadataBytes = metadataJson.toString().getBytes();
+            ByteBuffer metadataLengthBuffer = ByteBuffer.allocate(4);
+            metadataLengthBuffer.putInt(metadataBytes.length);
+            metadataLengthBuffer.flip();
+            socketChannel.write(metadataLengthBuffer);
+
+            ByteBuffer metadataBuffer = ByteBuffer.wrap(metadataBytes);
             socketChannel.write(metadataBuffer);
-            // Ensure the metadata is sent before file transfer
-            socketChannel.socket().getOutputStream().flush();
 
             ByteBuffer buffer = ByteBuffer.allocateDirect(1024 * 1024); // 1 MB buffer
             while (fileChannel.read(buffer) > 0) {
@@ -55,24 +66,17 @@ public class FileSender implements Runnable {
                 socketChannel.write(buffer);
                 buffer.clear();
             }
-            System.out.println("File sent successfully!");
+            buffer.clear();
+            socketChannel.socket().getOutputStream().flush();
             result = "File sent successfully!";
             FileTransferManager.logEvent("File sent: " + localFileName);
-
-            ByteBuffer receiveMetadataBuffer = ByteBuffer.allocate(256); // assuming metadata is less than 256 bytes
-            socketChannel.read(receiveMetadataBuffer);
-            metadataBuffer.flip();
-            String receivedMetadata = new String(metadataBuffer.array(), 0, metadataBuffer.limit());
-            System.out.println("Received response: " + receivedMetadata);
+            fileChannel.close();
 
         } catch (IOException e) {
-            System.out.println("Error sending file: " + e.getMessage());
+            e.printStackTrace();
             result = "File not able to be sent!";
             FileTransferManager.logEvent("File sending failed for " + localFileName + ": " + e.getMessage());
         }
     }
 
-//    public void run(){
-//        sendFile();
-//    }
 }

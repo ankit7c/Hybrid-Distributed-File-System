@@ -156,6 +156,7 @@ public class FDServer extends Thread {
                                 Member.getTimeFromString(Member.getLocalDateTime()));
                         if (duration.toMillis() > (int) FDProperties.getFDProperties().get("suspicionProtocolPeriod")) {
                             logger.debug("Member " + member.getName() + " was in suspect for long time. Sending a failed response");
+                            MembershipList.failedNodes.add(member.getId());
                             dissemination.sendConfirmMessage(member);
                             //TODO MP3 call replication here as well
                         }

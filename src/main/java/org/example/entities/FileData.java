@@ -30,6 +30,10 @@ public class FileData {
         return replicaMap.containsKey(fileName) || ownedFiles.contains(fileName);
     }
 
+//    public static boolean isFileReplica(String fileName) {
+//        return replicaMap.containsKey(fileName);
+//    }
+
     public static List<String> getAndRemoveReplicasOfANode(int nodeId) {
         List<String> files = new ArrayList<>();
         for(Map.Entry<String,Integer> entry: replicaMap.entrySet()){

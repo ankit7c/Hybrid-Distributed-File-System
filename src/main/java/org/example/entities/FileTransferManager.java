@@ -15,25 +15,26 @@ public class FileTransferManager {
 
     public static synchronized void logEvent(String event) {
         eventLog.add(event);
-        String[] parts = event.split(" : ");
+        if(event.contains("File Operation")) {
+            String[] parts = event.split(" : ");
 
-        if (parts.length < 4) {
-            System.out.println("Invalid format");
-            return;
-        }
+            if (parts.length < 4) {
+                System.out.println("Invalid format");
+                return;
+            }
 
-        String operationType = parts[1];
-        String status = parts[2];
-        String fileName = parts[3];
-        if(status.equals("Successful")) {
-            if (fileOperations.containsKey(fileName)) {
-                fileOperations.get(fileName).add(operationType);
-            }else{
-                fileOperations.put(fileName, new ArrayList<>());
-                fileOperations.get(fileName).add(operationType);
+            String operationType = parts[1];
+            String status = parts[2];
+            String fileName = parts[3];
+            if (status.equals("Successful")) {
+                if (fileOperations.containsKey(fileName)) {
+                    fileOperations.get(fileName).add(event);
+                } else {
+                    fileOperations.put(fileName, new ArrayList<>());
+                    fileOperations.get(fileName).add(event);
+                }
             }
         }
-
         System.out.println("Event: " + event);
     }
 
@@ -75,6 +76,7 @@ public class FileTransferManager {
 
     private static String getOperationFromOriginal(String original){
         if(original!=null){
+//            System.out.println("in compare logs "+original);
             String[] parts = original.split(" : ");
             return parts[1];
         }else{

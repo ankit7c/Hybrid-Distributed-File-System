@@ -43,7 +43,7 @@ public class Receiver extends Thread {
                                 String hyDFSFileName = String.valueOf(message.getMessageContent().get("hyDFSFileName"));
                                 if(FileData.checkFilePresent(hyDFSFileName)) {
                                     FileTransferManager.getRequestQueue().addRequest(new FileSender(
-                                            hyDFSFileName,
+                                            "HyDFS/" + hyDFSFileName,
                                             hyDFSFileName,
                                             message.getIpAddress().getHostAddress(),
                                             Integer.parseInt(String.valueOf(message.getMessageContent().get("senderPort"))),
@@ -65,7 +65,7 @@ public class Receiver extends Thread {
                                 String hyDFSFileName = String.valueOf(message.getMessageContent().get("hyDFSFileName"));
                                 if(FileData.checkFilePresent(hyDFSFileName)){
                                     FileTransferManager.getRequestQueue().addRequest(new FileSender(
-                                            hyDFSFileName,
+                                            "HyDFS/" + hyDFSFileName,
                                             hyDFSFileName,
                                             message.getIpAddress().getHostAddress(),
                                             Integer.parseInt(String.valueOf(message.getMessageContent().get("senderPort"))),
@@ -92,7 +92,10 @@ public class Receiver extends Thread {
                             String[] requestFiles = String.valueOf(message.getMessageContent().get("hyDFSFileNames")).split(",");
                             HashMap<String, List<String>> map = new HashMap<>();
                             for(String requestFile : requestFiles){
-                                map.put(requestFile, FileTransferManager.getFileOperations(requestFile));
+//                                System.out.println(FileTransferManager.getFileOperations(requestFile));
+                                if(FileData.checkFilePresent(requestFile)) {
+                                    map.put(requestFile, FileTransferManager.getFileOperations(requestFile));
+                                }
                             }
                             ObjectMapper objectMapper = new ObjectMapper();
                             out.println(objectMapper.writeValueAsString(map));

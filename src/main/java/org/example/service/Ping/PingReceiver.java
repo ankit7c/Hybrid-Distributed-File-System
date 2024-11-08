@@ -218,6 +218,7 @@ public class PingReceiver extends Thread{
                     logger.info("Failed message received" + message.getMessageContent().get("memberName"));
                     //TODO MP3 call a function to start re replication process
                     try {
+                        MembershipList.failedNodes.add(HashFunction.hash(String.valueOf(message.getMessageContent().get("memberName"))));
                         if(!message.getMessageContent().get("memberName").equals(FDProperties.getFDProperties().get("machineName"))) {
                             MembershipList.removeMember((String) message.getMessageContent().get("memberName"));
                         }else{
@@ -259,6 +260,7 @@ public class PingReceiver extends Thread{
                     //TODO MP3 call a function to start re replication process
                     try {
                         //TODO add a piece of code that will remove the member from the list
+                        MembershipList.failedNodes.add(HashFunction.hash(String.valueOf(message.getMessageContent().get("memberName"))));
                         if(!message.getMessageContent().get("memberName").equals(FDProperties.getFDProperties().get("machineName"))) {
                             MembershipList.removeMember((String) message.getMessageContent().get("memberName"));
                         }else{
