@@ -34,6 +34,7 @@ public class FDProperties {
         fDProperties.put("versionNo", 0);
         fDProperties.put("incarnationNo", prop.getProperty("incarnationNo"));
         fDProperties.put("cacheSize", prop.getProperty("cacheSize"));
+        fDProperties.put("mergeReq", prop.getProperty("mergeReq"));
 //        fDProperties.put("tcpPort", Integer.parseInt(prop.getProperty("tcpPort")));
 //        fDProperties.put("filePort", Integer.parseInt(prop.getProperty("filePort")));
         if((Boolean) fDProperties.get("isSuspicionModeOn"))

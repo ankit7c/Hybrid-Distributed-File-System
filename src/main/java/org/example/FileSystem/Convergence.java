@@ -1,5 +1,6 @@
 package org.example.FileSystem;
 
+import org.example.entities.FDProperties;
 import org.example.entities.FileData;
 import org.example.entities.MembershipList;
 import org.example.service.Log.LogServer;
@@ -12,10 +13,19 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Convergence extends Thread {
     private static final Logger logger = LoggerFactory.getLogger(Convergence.class);
+    int checkMergeCounter = 0;
     public void run() {
         while (true) {
             try {
                 Sender s = new Sender();
+                if(Boolean.parseBoolean(String.valueOf(FDProperties.getFDProperties().get("mergeReq")))){
+                    System.out.println("Executing MergeReq");
+                    if(checkMergeCounter > 6) {
+                        List<String> ownedFiles = FileData.getOwnedFiles();
+                        s.updateReplicas(ownedFiles);
+                        checkMergeCounter = 0;
+                    }
+                }
                 List<Integer> sortedKeys = new CopyOnWriteArrayList<>(MembershipList.memberslist.keySet());
                 if(MembershipList.failedNodes.size()>0){
                     System.out.println("Some Nodes Failed");
@@ -52,6 +62,7 @@ public class Convergence extends Thread {
                     }
                 }
                 MembershipList.failedNodes.clear();
+                checkMergeCounter++;
 //System.out.println("re-replication process completed");
                 Thread.sleep(10000);
             } catch (InterruptedException e) {
