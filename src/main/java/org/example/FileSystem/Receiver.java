@@ -15,6 +15,7 @@ import java.net.Socket;
 import java.nio.channels.FileChannel;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.sql.SQLOutput;
 import java.util.HashMap;
 import java.util.List;
 
@@ -88,12 +89,16 @@ public class Receiver extends Thread {
                         case "get_file_hash":
                             try {
                                 String hyDFSFileName = String.valueOf(message.getMessageContent().get("hyDFSFileName"));
+                                //System.out.println("At line 92 in receiv");
                                 if(FileData.checkFilePresent(hyDFSFileName)){
-                                    FileChannel fileChannel = FileChannel.open(Paths.get(hyDFSFileName), StandardOpenOption.READ);
+                                    FileChannel fileChannel = FileChannel.open(Paths.get("HyDFS/" + hyDFSFileName), StandardOpenOption.READ);
                                     response = FileData.calculateHash(fileChannel);
+                                    //System.out.println("At line 95 in receiv");
                                 }else {
                                     response = "Unsuccessful file not found";
+                                    //System.out.println("At line 98 in receiv");
                                 }
+                                //System.out.println("Printing from 101"+response);
                                 out.println(response);
                             }catch (Exception e){
                                 e.printStackTrace();

@@ -30,7 +30,7 @@ public class Sender {
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
 
-            System.out.println(port+10);
+            //System.out.println(port+10);
             String msg = objectMapper.writeValueAsString(message.getMessageContent());
             out.println(msg);
             System.out.println("Sent to server: " + msg);
@@ -88,7 +88,7 @@ public class Sender {
             if(response.contains("Unsuccessful")){
                 return false;
             }else {
-                FileChannel fileChannel = FileChannel.open(Paths.get(cacheFileName), StandardOpenOption.READ);
+                FileChannel fileChannel = FileChannel.open(Paths.get("local/" + cacheFileName), StandardOpenOption.READ);
                 String calculatedHash = FileData.calculateHash(fileChannel);
                 return calculatedHash.equals(response);
             }
@@ -137,8 +137,10 @@ public class Sender {
             String IpAddress = member.getIpAddress();
             String port = member.getPort();
             if(LRUFileCache.FILE_CACHE.isFileInCache(hyDFSFileName)){
+                //System.out.println(" At line no. 140 in sender");
                 if(LRUFileCache.FILE_CACHE.isFileOlder(hyDFSFileName)){
                     //check if file has changed with the owner
+                    //System.out.println(" At line no. 143 in sender");
                     if(getFileRequestHash(IpAddress, Integer.parseInt(port), localFileName, hyDFSFileName)){
                         System.out.println("The file is already cached and saved at : local/" + hyDFSFileName);
                         isAbsent = false;
@@ -147,18 +149,18 @@ public class Sender {
                     System.out.println("The file is already cached and saved at : local/" + hyDFSFileName);
                     isAbsent = false;
                 }
-            }else {
-                isAbsent = false;
             }
 
             if(isAbsent){
                 int fileReceiverPort = (int) FDProperties.getFDProperties().get("machinePort");
+                //System.out.println(" At line no. 159 in sender");
                 String result = getFileRequest(IpAddress, Integer.parseInt(port), localFileName, hyDFSFileName, fileReceiverPort);
                 System.out.println("File receive was " + result);
             }
             return "Success";
         }catch (Exception e){
             e.printStackTrace();
+            //System.out.println(" At line no. 166 in sender");
             return "Unable to send receive file request";
         }
     }

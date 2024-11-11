@@ -56,6 +56,7 @@ public class FileData {
 
     public static String calculateHash(FileChannel fileChannel) throws NoSuchAlgorithmException, IOException {
         // Initialize the MessageDigest with the desired algorithm
+        //System.out.println("At line 59  in calculate hash");
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
 
         ByteBuffer buffer = ByteBuffer.allocateDirect(8192);  // 8 KB buffer
@@ -72,7 +73,7 @@ public class FileData {
         for (byte b : hashBytes) {
             hashString.append(String.format("%02x", b));
         }
-
+        //System.out.println("At line 75  in calculate hash "+hashString.toString());
         return hashString.toString();
     }
 }

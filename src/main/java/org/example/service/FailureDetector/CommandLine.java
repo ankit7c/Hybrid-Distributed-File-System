@@ -2,6 +2,7 @@ package org.example.service.FailureDetector;
 
 import org.example.Client;
 import org.example.FileSystem.HashFunction;
+import org.example.FileSystem.HelperFunctions;
 import org.example.FileSystem.Sender;
 import org.example.Server;
 import org.example.entities.FDProperties;
@@ -141,6 +142,43 @@ public class CommandLine implements Runnable {
                             break;
                         case "list_self_id":
                             System.out.println("Self ID: " + MembershipList.selfId);
+                            break;
+
+                        case "merge_test4kb":
+                            long startTime1 = System.currentTimeMillis();
+                            String hyDFsFileName1 = "base_file_10MB.txt";
+                            int concurrentClients = Integer.parseInt(list[1]);
+                            int size1 = Integer.parseInt(list[2]);
+                            List<String> vmNames = new ArrayList<>();
+                            HelperFunctions.listFiller(concurrentClients, vmNames, size1);
+                            List<String> localFilesNames = new ArrayList<>();
+                            for(int i=0;i<size1;i++){
+                                localFilesNames.add("input/append_data_4KB.txt");
+                            }
+                            long endTime1 = System.currentTimeMillis();
+                            long duration1 = endTime1 - startTime1;
+                            System.out.println("Start time was " + startTime1 + " end time is "+ endTime1 +"time taken "+duration1);
+                            sender.sendMultiAppendRequests(hyDFsFileName1, vmNames, localFilesNames);
+                            break;
+
+                        case "merge_test40kb":
+                            long startTime2 = System.currentTimeMillis();
+                            String hyDFsFileName2 = "base_file_10MB.txt";
+                            int concurrentClients2 = Integer.parseInt(list[1]);
+                            int size2 = Integer.parseInt(list[2]);
+                            List<String> vmNames2 = new ArrayList<>();
+                            HelperFunctions.listFiller(concurrentClients2, vmNames2, size2);
+                            List<String> localFilesNames2 = new ArrayList<>();
+                            for(int i=0;i<size2;i++){
+                                localFilesNames2.add("input/append_data_40KB.txt");
+                            }
+                            sender.sendMultiAppendRequests(hyDFsFileName2, vmNames2, localFilesNames2);
+                            long endTime2 = System.currentTimeMillis();
+                            long duration2 = endTime2 - startTime2;
+                            System.out.println("Start time was " + startTime2 + " end time is "+ endTime2 +"time taken "+duration2);
+                            break;
+
+
                         default:
                             System.out.println("Invalid command");
                             logger.error("Invalid command");

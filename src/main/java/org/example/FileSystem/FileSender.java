@@ -46,7 +46,7 @@ public class FileSender implements Runnable {
 
             JSONObject metadataJson = new JSONObject();
             metadataJson.put("FILENAME", hyDFSFileName);
-            metadataJson.put("LOCALFILENAME", localFileName);
+            metadataJson.put("LOCALFILENAME", localFileName.replace("HyDFS/", ""));
             metadataJson.put("SIZE", fileChannel.size());
             metadataJson.put("TYPE", fileType);
             metadataJson.put("OP", fileOp);

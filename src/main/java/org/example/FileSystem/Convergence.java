@@ -2,6 +2,7 @@ package org.example.FileSystem;
 
 import org.example.entities.FDProperties;
 import org.example.entities.FileData;
+import org.example.entities.Member;
 import org.example.entities.MembershipList;
 import org.example.service.Log.LogServer;
 import org.slf4j.Logger;
@@ -35,7 +36,7 @@ public class Convergence extends Thread {
                 }
                 List<String> ownedFiles = FileData.getOwnedFiles();
                 for (Integer failedNodeId : MembershipList.failedNodes) {
-                    System.out.println("Starting re-replication of files of node " +failedNodeId);
+                    System.out.println("Starting re-replication of files of node " +failedNodeId+" Current Time:- "+ Member.getLocalDateTime());
                     String status = checkPredecessorOrSuccessor(failedNodeId, MembershipList.selfId,sortedKeys);
                     switch (status) {
                         case "Successor1":

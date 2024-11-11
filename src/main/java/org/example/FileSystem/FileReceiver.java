@@ -103,8 +103,6 @@ public class FileReceiver extends Thread {
                     buffer.clear();
                     System.out.println("File received successfully! and saved at " + hyDFSFileName);
 
-                    if (fileChannel != null) fileChannel.close();
-                    if (isTempFilePresent && tempFileChannel != null) tempFileChannel.close();
 
                     if(fileType.equals("UPLOAD")) {
                         if(fileOp.equals("APPEND")) {
@@ -149,16 +147,22 @@ public class FileReceiver extends Thread {
                             FileTransferManager.logEvent("File Operation : Upload Replica : Successful : " + hyDFSFileName);
                         }
                     } else if (fileType.equals("GET")) {
-                        LRUFileCache.FILE_CACHE.addFile(hyDFSFileName, fileChannel.size(), HyDFSFilePath + hyDFSFileName);
+                        LRUFileCache.FILE_CACHE.addFile(hyDFSFileName, fileChannel.size(), localFilePath + hyDFSFileName);
                     }
                     FileTransferManager.logEvent("File received: " + hyDFSFileName);
                     tempCounter++;
+
+                    if (fileChannel != null) fileChannel.close();
+                    if (isTempFilePresent && tempFileChannel != null) tempFileChannel.close();
                 } catch (IOException e) {
+                    System.out.println(" Operation Completed . Current Time is :- "+Member.getLocalDateTime());
                     e.printStackTrace();
                     FileTransferManager.logEvent("File reception failed for " + hyDFSFileName + ": " + e.getMessage());
                 }
-                hyDFSFileName = null;
 
+
+                hyDFSFileName = null;
+                System.out.println(" Operation Completed . Current Time is :- "+Member.getLocalDateTime());
             }
         } catch (IOException e) {
             e.printStackTrace();
