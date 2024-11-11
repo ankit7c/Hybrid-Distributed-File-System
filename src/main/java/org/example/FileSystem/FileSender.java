@@ -46,13 +46,14 @@ public class FileSender implements Runnable {
 
             JSONObject metadataJson = new JSONObject();
             metadataJson.put("FILENAME", hyDFSFileName);
+            metadataJson.put("LOCALFILENAME", localFileName);
             metadataJson.put("SIZE", fileChannel.size());
             metadataJson.put("TYPE", fileType);
             metadataJson.put("OP", fileOp);
             metadataJson.put("SENDERID", MembershipList.selfId);
 
             byte[] metadataBytes = metadataJson.toString().getBytes();
-            ByteBuffer metadataLengthBuffer = ByteBuffer.allocate(4);
+            ByteBuffer metadataLengthBuffer = ByteBuffer.allocate(5);
             metadataLengthBuffer.putInt(metadataBytes.length);
             metadataLengthBuffer.flip();
             socketChannel.write(metadataLengthBuffer);

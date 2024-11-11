@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import static org.example.entities.FDProperties.fDProperties;
 
 // Comma class that will be executed by multiple threads
+
 /**
  * This Class is handle command line commands
  */
@@ -81,16 +82,16 @@ public class CommandLine implements Runnable {
                         // Commands for Distributed File System Handling
                         case "create":
                             sender.uploadFile(list[1], list[2]);
-                            System.out.println(list[0] + list[1] + list[2]);
+//                            System.out.println(list[0] + list[1] + list[2]);
                             break;
 
                         case "get":
                             sender.get_File(list[1], list[2]);
-                            System.out.println(list[0] + list[1] + list[2]);
+//                            System.out.println(list[0] + list[1] + list[2]);
                             break;
                         case "append":
                             sender.append_File(list[1], list[2]);
-                            System.out.println(list[0] + list[1] + list[2]);
+//                            System.out.println(list[0] + list[1] + list[2]);
                             break;
                         case "merge":
                             String hyDFSFile = list[1];
@@ -123,7 +124,7 @@ public class CommandLine implements Runnable {
                             break;
                         case "list_mem_ids":
 //                            augment list_mem from MP2 to also print the ID on the ring which each node in the membership list maps to
-                            MembershipList.memberslist.forEach((k, v) -> System.out.println(k + "," + v));
+                            MembershipList.memberslist.forEach((k, v) -> System.out.println(k + "," + v.getId()));
                             break;
                         case "multiappend":
                             String hyDFSFileName = list[1];
@@ -138,7 +139,8 @@ public class CommandLine implements Runnable {
                             }
                             sender.sendMultiAppendRequests(hyDFSFileName, VMs, localFiles);
                             break;
-
+                        case "list_self_id":
+                            System.out.println("Self ID: " + MembershipList.selfId);
                         default:
                             System.out.println("Invalid command");
                             logger.error("Invalid command");

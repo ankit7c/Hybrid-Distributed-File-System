@@ -3,8 +3,14 @@ package org.example.FileSystem;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.entities.*;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.Socket;
+import java.nio.channels.FileChannel;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +69,35 @@ public class Sender {
         }
     }
 
+    public Boolean getFileRequestHash(String IpAddress, int port, String cacheFileName, String hyDFSFileName) {
+        try {
+            Map<String, Object> messageContent = new HashMap<>();
+            messageContent.put("messageName", "get_file_hash");
+            messageContent.put("senderName", FDProperties.getFDProperties().get("machineName"));
+            messageContent.put("senderIp", FDProperties.getFDProperties().get("machineIp"));
+            messageContent.put("senderPort", String.valueOf(FDProperties.getFDProperties().get("machinePort")));
+            messageContent.put("msgId", FDProperties.generateRandomMessageId());
+            messageContent.put("hyDFSFileName", hyDFSFileName);
+            String senderPort = "" + FDProperties.getFDProperties().get("machinePort");
+            Message msg = new Message("sending_file",
+                    String.valueOf(FDProperties.getFDProperties().get("machineIp")),
+                    senderPort,
+                    messageContent);
+            String response = sendMessage(IpAddress, port, msg);
+            System.out.println(response);
+            if(response.contains("Unsuccessful")){
+                return false;
+            }else {
+                FileChannel fileChannel = FileChannel.open(Paths.get(cacheFileName), StandardOpenOption.READ);
+                String calculatedHash = FileData.calculateHash(fileChannel);
+                return calculatedHash.equals(response);
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     //TODO send request to receive a file
     //TODO send a request to upload a file
     public String uploadFile(String localFileName, String hyDFSFileName) throws IOException {
@@ -96,14 +131,32 @@ public class Sender {
 //                System.out.println(hyDFSFileName + " exists at the local machine under HyDFS/");
 //                return "success";
 //            }
+            boolean isAbsent = true;
             int fileNameHash = HashFunction.hash(hyDFSFileName);
             Member member = MembershipList.getMemberById(fileNameHash);
             String IpAddress = member.getIpAddress();
             String port = member.getPort();
-            int fileReceiverPort = (int) FDProperties.getFDProperties().get("machinePort");
-            String result = getFileRequest(IpAddress, Integer.parseInt(port), localFileName, hyDFSFileName, fileReceiverPort);
-            System.out.println("File receive was " + result);
-            return result;
+            if(LRUFileCache.FILE_CACHE.isFileInCache(hyDFSFileName)){
+                if(LRUFileCache.FILE_CACHE.isFileOlder(hyDFSFileName)){
+                    //check if file has changed with the owner
+                    if(getFileRequestHash(IpAddress, Integer.parseInt(port), localFileName, hyDFSFileName)){
+                        System.out.println("The file is already cached and saved at : local/" + hyDFSFileName);
+                        isAbsent = false;
+                    }
+                }else{
+                    System.out.println("The file is already cached and saved at : local/" + hyDFSFileName);
+                    isAbsent = false;
+                }
+            }else {
+                isAbsent = false;
+            }
+
+            if(isAbsent){
+                int fileReceiverPort = (int) FDProperties.getFDProperties().get("machinePort");
+                String result = getFileRequest(IpAddress, Integer.parseInt(port), localFileName, hyDFSFileName, fileReceiverPort);
+                System.out.println("File receive was " + result);
+            }
+            return "Success";
         }catch (Exception e){
             e.printStackTrace();
             return "Unable to send receive file request";

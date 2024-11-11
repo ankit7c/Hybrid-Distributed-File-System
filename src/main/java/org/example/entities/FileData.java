@@ -1,5 +1,10 @@
 package org.example.entities;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -47,5 +52,27 @@ public class FileData {
 
     public static void addOwnedFiles(List<String>ownedFiles) {
         FileData.ownedFiles.addAll(ownedFiles);
+    }
+
+    public static String calculateHash(FileChannel fileChannel) throws NoSuchAlgorithmException, IOException {
+        // Initialize the MessageDigest with the desired algorithm
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+        ByteBuffer buffer = ByteBuffer.allocateDirect(8192);  // 8 KB buffer
+        int bytesRead;
+
+        while ((bytesRead = fileChannel.read(buffer)) != -1) {
+            buffer.flip();
+            digest.update(buffer);
+            buffer.clear();
+        }
+
+        byte[] hashBytes = digest.digest();
+        StringBuilder hashString = new StringBuilder();
+        for (byte b : hashBytes) {
+            hashString.append(String.format("%02x", b));
+        }
+
+        return hashString.toString();
     }
 }

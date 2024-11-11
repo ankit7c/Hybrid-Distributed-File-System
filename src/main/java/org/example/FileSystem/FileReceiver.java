@@ -9,13 +9,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
-
-import static org.example.entities.FileData.checkFilePresent;
 
 public class FileReceiver extends Thread {
     int port;
@@ -60,6 +56,7 @@ public class FileReceiver extends Thread {
                     System.out.println("Printing json" + metadataJsonString);
                     JSONObject metadataJson = new JSONObject(metadataJsonString);
                     String hyDFSFileName = metadataJson.getString("FILENAME");
+                    String localFileName = metadataJson.getString("LOCALFILENAME");
                     long fileSize = metadataJson.getLong("SIZE");
                     String fileType = metadataJson.getString("TYPE");
                     String fileOp = metadataJson.getString("OP");
@@ -85,7 +82,7 @@ public class FileReceiver extends Thread {
                             isTempFilePresent = true;
                         }
                     }else if(fileType.equals("GET")) {
-                        fileChannel = FileChannel.open(Paths.get(localFilePath + hyDFSFileName), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                        fileChannel = FileChannel.open(Paths.get(localFilePath + localFileName), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
                     }else if(fileType.equals("REPLICA")) {
                         if (fileOp.equals("CREATE")) {
                             fileChannel = FileChannel.open(Paths.get(HyDFSFilePath + hyDFSFileName), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
@@ -125,6 +122,7 @@ public class FileReceiver extends Thread {
                                         ""));
                             }
                             FileTransferManager.logEvent("File Operation : Append : Successful : " + hyDFSFileName);
+                            FileTransferManager.logEvent("File Append to " + hyDFSFileName + " with file " + localFileName);
 
                         }else{
                             FileData.addOwnedFile(hyDFSFileName);
@@ -145,11 +143,13 @@ public class FileReceiver extends Thread {
                     }else if(fileType.equals("REPLICA")) {
                         if (fileOp.equals("APPEND")) {
                             FileTransferManager.logEvent("File Operation : Append Replica : Successful : " + hyDFSFileName);
+                            FileTransferManager.logEvent("File Append to " + hyDFSFileName + " with file " + localFileName);
                         }else{
                             FileData.addReplica(hyDFSFileName, senderId);
                             FileTransferManager.logEvent("File Operation : Upload Replica : Successful : " + hyDFSFileName);
                         }
-
+                    } else if (fileType.equals("GET")) {
+                        LRUFileCache.FILE_CACHE.addFile(hyDFSFileName, fileChannel.size(), HyDFSFilePath + hyDFSFileName);
                     }
                     FileTransferManager.logEvent("File received: " + hyDFSFileName);
                     tempCounter++;

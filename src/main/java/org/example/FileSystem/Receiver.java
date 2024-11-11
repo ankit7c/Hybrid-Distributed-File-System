@@ -12,6 +12,9 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.channels.FileChannel;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.List;
 
@@ -74,6 +77,20 @@ public class Receiver extends Thread {
                                             "Sending Requested File"
                                     ));
                                     response = "Successful";
+                                }else {
+                                    response = "Unsuccessful file not found";
+                                }
+                                out.println(response);
+                            }catch (Exception e){
+                                e.printStackTrace();
+                            }
+                            break;
+                        case "get_file_hash":
+                            try {
+                                String hyDFSFileName = String.valueOf(message.getMessageContent().get("hyDFSFileName"));
+                                if(FileData.checkFilePresent(hyDFSFileName)){
+                                    FileChannel fileChannel = FileChannel.open(Paths.get(hyDFSFileName), StandardOpenOption.READ);
+                                    response = FileData.calculateHash(fileChannel);
                                 }else {
                                     response = "Unsuccessful file not found";
                                 }

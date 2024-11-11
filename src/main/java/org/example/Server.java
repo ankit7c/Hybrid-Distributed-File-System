@@ -5,6 +5,7 @@ import org.example.FileSystem.FileReceiver;
 import org.example.FileSystem.HashFunction;
 import org.example.FileSystem.Receiver;
 import org.example.entities.FDProperties;
+import org.example.entities.LRUFileCache;
 import org.example.entities.Member;
 import org.example.entities.MembershipList;
 import org.example.service.FailureDetector.Dissemination;
@@ -17,7 +18,7 @@ import org.slf4j.LoggerFactory;
 /**
  * This class contains Server related logic
  */
-public class Server{
+public class Server {
 
     private static final Logger logger = LoggerFactory.getLogger(Server.class);
 
@@ -65,6 +66,8 @@ public class Server{
                 Member.getLocalDateTime(),
                 String.valueOf(FDProperties.getFDProperties().get("incarnationNo"))));
         System.out.println("Start Receiver");
+        //Set Max Size of cache given in the properties
+        LRUFileCache.FILE_CACHE.addMaxSize();
         Receiver receiver = new Receiver();
         receiver.start();
         FileReceiver fileReceiver = new FileReceiver();
