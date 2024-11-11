@@ -1,7 +1,7 @@
 # CS 425 MP3 (Hybrid Distributed File System)
 
 ## Description 
-Implementation of Hybrid Distributed File System for CS424 MP3.
+Implementation of Hybrid Distributed File System for CS425 MP3.
 
 ## Installation Instructions
 
