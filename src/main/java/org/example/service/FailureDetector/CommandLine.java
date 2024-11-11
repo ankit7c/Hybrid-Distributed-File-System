@@ -82,7 +82,7 @@ public class CommandLine implements Runnable {
 
                         // Commands for Distributed File System Handling
                         case "create":
-                            System.out.println("Starting a process current time is "+Member.getLocalDateTime());
+                            //System.out.println("Starting a process current time is "+Member.getLocalDateTime());
                             sender.uploadFile(list[1], list[2]);
 //                            System.out.println(list[0] + list[1] + list[2]);
                             break;
